@@ -38,9 +38,13 @@ public class PlotPanel extends JPanel
         drawData(g2);
     }
 
+    /**
+     * Draws a border around the component to define the edge
+     * @param g2
+     */
     protected void drawBorder(Graphics2D g2)
     {
-        g2.drawRect (1, 1, getWidth() - 2, getHeight() - 2);
+        g2.drawRect (1, 1, getWidth() - 2, getHeight() - 2); //TODO why -2?
     }
 
     /**
@@ -162,6 +166,16 @@ public class PlotPanel extends JPanel
     {
         this.plotSizeY = y;
         this.plotSizeX = x;
+    }
+
+    public int getPlotSizeX()
+    {
+        return plotSizeX;
+    }
+
+    public int getPlotSizeY()
+    {
+        return plotSizeY;
     }
 
     /**
