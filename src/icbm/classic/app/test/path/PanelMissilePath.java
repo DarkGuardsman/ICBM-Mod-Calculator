@@ -1,7 +1,7 @@
 package icbm.classic.app.test.path;
 
 import icbm.classic.app.test.data.PlotPoint;
-import icbm.classic.app.test.gui.PlotPanel;
+import icbm.classic.app.test.gui.components.PlotPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,7 +14,7 @@ import java.util.List;
  * @see <a href="https://github.com/BuiltBrokenModding/VoltzEngine/blob/development/license.md">License</a> for what you can and can't do with the code.
  * Created by Dark(DarkGuardsman, Robert) on 2/27/2018.
  */
-public class FramePathTest extends JFrame implements ActionListener
+public class PanelMissilePath extends JPanel implements ActionListener
 {
     public static final String COMMAND_CALCULATE = "calculate";
     public static final String COMMAND_CLEAR = "clear";
@@ -40,15 +40,9 @@ public class FramePathTest extends JFrame implements ActionListener
     Label maxYLabel;
     Label arcDistanceLabel;
 
-    public FramePathTest()
+    public PanelMissilePath()
     {
-        //Set frame properties
         setLayout(new BorderLayout());
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1000, 800);
-        setMinimumSize(new Dimension(800, 800));
-        setLocation(200, 200);
-        setTitle("Missile Path Visualizer");
 
         //Output data
         add(buildEastSection(), BorderLayout.EAST);
@@ -63,8 +57,6 @@ public class FramePathTest extends JFrame implements ActionListener
         JPanel debugPanel = new JPanel();
         debugPanel.setMinimumSize(new Dimension(800, 200));
         add(debugPanel, BorderLayout.SOUTH);
-
-        pack();
     }
 
     protected JPanel buildMainDisplay()

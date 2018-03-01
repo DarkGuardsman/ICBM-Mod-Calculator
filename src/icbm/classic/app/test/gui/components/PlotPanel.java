@@ -1,4 +1,4 @@
-package icbm.classic.app.test.gui;
+package icbm.classic.app.test.gui.components;
 
 
 import icbm.classic.app.test.data.PlotPoint;
@@ -31,20 +31,39 @@ public class PlotPanel extends JPanel
     {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
 
-        //Get component size
-        int w = getWidth();
-        int h = getHeight();
+        drawBorder(g2);
+        drawRuler(g2);
+        drawData(g2);
+    }
 
-        // Draw ordinate.
-        g2.draw(new Line2D.Double(PAD, PAD, PAD, h - PAD));
+    protected void drawBorder(Graphics2D g2)
+    {
+        g2.drawRect (1, 1, getWidth() - 2, getHeight() - 2);
+    }
 
-        // Draw abcissa.
-        g2.draw(new Line2D.Double(PAD, h - PAD, w - PAD, h - PAD));
+    /**
+     * Draws the ruler
+     *
+     * @param g2
+     */
+    protected void drawRuler(Graphics2D g2)
+    {
+        //Left line
+        g2.draw(new Line2D.Double(PAD, PAD, PAD, getHeight() - PAD));
 
+        //Bottom line
+        g2.draw(new Line2D.Double(PAD, getHeight() - PAD, getWidth() - PAD, getHeight() - PAD));
+    }
 
+    /**
+     * Draws the data points
+     *
+     * @param g2
+     */
+    protected void drawData(Graphics2D g2)
+    {
         if (data != null && !data.isEmpty())
         {
             //Calculate scale to fit display
@@ -54,12 +73,11 @@ public class PlotPanel extends JPanel
             //Render data points
             for (PlotPoint pos : data)
             {
-
                 //Get pixel position
                 double x = PAD + scaleX * pos.x();
-                double y = h - PAD - scaleY * pos.y();
+                double y = getHeight() - PAD - scaleY * pos.y();
 
-                if (x >= 0 && x <= w && y <= h)
+                if (x >= 0 && x <= getWidth() && y <= getHeight())
                 {
                     //Set color
                     g2.setPaint(pos.color != null ? pos.color : Color.red);
@@ -80,7 +98,7 @@ public class PlotPanel extends JPanel
      */
     protected double getScaleX()
     {
-        return (double) (getWidth() - 2 * PAD) / (plotSizeX > 0 ? plotSizeX : getMaxY());
+        return (double) (getWidth() - 2 * PAD) / (plotSizeX > 0 ? plotSizeX : getMaxX());
     }
 
     /**
