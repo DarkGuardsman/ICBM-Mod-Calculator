@@ -19,32 +19,87 @@ import java.util.List;
 public class PlotPanel extends JPanel
 {
     /** Data to display in the panel */
-    List<PlotPoint> data = null;
+    protected List<PlotPoint> data = new ArrayList();
     /** Spacing from each side */
     int PAD = 20;
 
     int plotSizeX = -1;
     int plotSizeY = -1;
 
+    double plotLineSpacing = -1;
+
     @Override
     protected void paintComponent(Graphics g)
     {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         drawBorder(g2);
+        drawGrid(g2);
         drawRuler(g2);
         drawData(g2);
     }
 
     /**
      * Draws a border around the component to define the edge
+     *
      * @param g2
      */
     protected void drawBorder(Graphics2D g2)
     {
-        g2.drawRect (1, 1, getWidth() - 2, getHeight() - 2); //TODO why -2?
+        g2.drawRect(1, 1, getWidth() - 2, getHeight() - 2); //TODO why -2?
+    }
+
+    protected void drawGrid(Graphics2D g2)
+    {
+        if (plotLineSpacing > 0)
+        {
+            drawGridX(g2);
+            drawGridY(g2);
+        }
+    }
+
+    protected void drawGridX(Graphics2D g2)
+    {
+        double start = 0;
+        double end = getDrawMaxX();
+
+        double current = start;
+        double xScale = getScaleX();
+
+        while (current < end)
+        {
+            //Increase
+            current += plotLineSpacing;
+
+            //Get pixel point of x
+            int x = PAD + (int) Math.ceil(current * xScale);
+
+            //Draw line
+            g2.draw(new Line2D.Double(x, PAD, x, getHeight() - PAD));
+        }
+    }
+
+    protected void drawGridY(Graphics2D g2)
+    {
+        double start = 0;
+        double end = getDrawMaxY();
+
+        double current = start;
+        double xScale = getScaleY();
+
+        while (current < end)
+        {
+            //Increase
+            current += plotLineSpacing;
+
+            //Get pixel point of x
+            int y = PAD + (int) Math.ceil(current * xScale);
+
+            //Draw line
+            g2.draw(new Line2D.Double(PAD, y, getWidth() - PAD, y));
+        }
     }
 
     /**
@@ -102,7 +157,7 @@ public class PlotPanel extends JPanel
      */
     protected double getScaleX()
     {
-        return (double) (getWidth() - 2 * PAD) / (plotSizeX > 0 ? plotSizeX : getMaxX());
+        return (double) (getWidth() - 2 * PAD) / getDrawMaxX();
     }
 
     /**
@@ -114,7 +169,17 @@ public class PlotPanel extends JPanel
      */
     protected double getScaleY()
     {
-        return (double) (getHeight() - 2 * PAD) / (plotSizeY > 0 ? plotSizeY : getMaxY());
+        return (double) (getHeight() - 2 * PAD) / getDrawMaxY();
+    }
+
+    public double getDrawMaxX()
+    {
+        return plotSizeX > 0 ? plotSizeX : getPointMaxX();
+    }
+
+    public double getDrawMaxY()
+    {
+        return plotSizeY > 0 ? plotSizeY : getPointMaxY();
     }
 
     /**
@@ -122,7 +187,7 @@ public class PlotPanel extends JPanel
      *
      * @return
      */
-    private double getMaxY()
+    public double getPointMaxY()
     {
         double max = -Integer.MAX_VALUE;
         for (PlotPoint pos : data)
@@ -140,7 +205,7 @@ public class PlotPanel extends JPanel
      *
      * @return
      */
-    private double getMaxX()
+    public double getPointMaxX()
     {
         double max = -Integer.MAX_VALUE;
         for (PlotPoint pos : data)
@@ -208,6 +273,10 @@ public class PlotPanel extends JPanel
         {
             this.data.clear();
         }
-        this.data = null;
+    }
+
+    public void drawLines(double i)
+    {
+        plotLineSpacing = i;
     }
 }
