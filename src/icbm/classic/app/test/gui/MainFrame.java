@@ -1,7 +1,8 @@
 package icbm.classic.app.test.gui;
 
-import icbm.classic.app.test.impact.PanelMissileAccuracy;
-import icbm.classic.app.test.path.PanelMissilePath;
+import icbm.classic.app.test.tools.impact.PanelMissileAccuracy;
+import icbm.classic.app.test.tools.path.PanelMissilePath;
+import icbm.classic.app.test.tools.spawning.PanelEntitySpawning;
 
 import javax.swing.*;
 import java.awt.*;
@@ -37,6 +38,9 @@ public class MainFrame extends JFrame implements ActionListener
 
         //Impact calculator
         tabbedPane.addTab("Accuracy", null, new PanelMissileAccuracy(),  "Calculator and visualizer for missile impact accuracy");
+
+        //Entity Spawn
+        tabbedPane.addTab("Spawning", null, new PanelEntitySpawning(),  "Calculator and visualizer for MC1.12 entity random spawn point generator");
 
 
         return tabbedPane;
