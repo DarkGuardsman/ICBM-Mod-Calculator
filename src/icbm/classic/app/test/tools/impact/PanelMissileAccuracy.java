@@ -1,4 +1,4 @@
-package icbm.classic.app.test.impact;
+package icbm.classic.app.test.tools.impact;
 
 import icbm.classic.app.test.data.PlotPoint;
 import icbm.classic.app.test.gui.components.PlotPanel;

@@ -1,4 +1,4 @@
-package icbm.classic.app.test.path;
+package icbm.classic.app.test.tools.path;
 
 import icbm.classic.app.test.data.PlotPoint;
 import icbm.classic.app.test.gui.components.PlotPanel;
