@@ -2,6 +2,7 @@ package icbm.classic.app.test.gui;
 
 import icbm.classic.app.test.tools.impact.PanelMissileAccuracy;
 import icbm.classic.app.test.tools.path.PanelMissilePath;
+import icbm.classic.app.test.tools.redmatter.PanelRedmatterRender;
 import icbm.classic.app.test.tools.spawning.PanelEntitySpawning;
 
 import javax.swing.*;
@@ -42,6 +43,8 @@ public class MainFrame extends JFrame implements ActionListener
         //Entity Spawn
         tabbedPane.addTab("Spawning", null, new PanelEntitySpawning(),  "Calculator and visualizer for MC1.12 entity random spawn point generator");
 
+        //Redmatter Render
+        tabbedPane.addTab("Redmatter Render", null, new PanelRedmatterRender(),  "Calculator and visualizer for redmatter render code");
 
         return tabbedPane;
     }
