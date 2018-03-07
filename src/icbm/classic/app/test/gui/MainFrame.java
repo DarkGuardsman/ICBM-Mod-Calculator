@@ -1,6 +1,7 @@
 package icbm.classic.app.test.gui;
 
 import icbm.classic.app.test.tools.impact.PanelMissileAccuracy;
+import icbm.classic.app.test.tools.math.PanelWave;
 import icbm.classic.app.test.tools.path.PanelMissilePath;
 import icbm.classic.app.test.tools.redmatter.PanelRedmatterRender;
 import icbm.classic.app.test.tools.spawning.PanelEntitySpawning;
@@ -45,6 +46,10 @@ public class MainFrame extends JFrame implements ActionListener
 
         //Redmatter Render
         tabbedPane.addTab("Redmatter Render", null, new PanelRedmatterRender(),  "Calculator and visualizer for redmatter render code");
+
+        //Sin vs cos
+        tabbedPane.addTab("Sin & cos", null, new PanelWave(),  "Calculator and visualizer for cos and sin function");
+
 
         return tabbedPane;
     }
