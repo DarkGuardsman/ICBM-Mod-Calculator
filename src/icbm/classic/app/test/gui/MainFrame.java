@@ -1,6 +1,7 @@
 package icbm.classic.app.test.gui;
 
 import icbm.classic.app.test.tools.impact.PanelMissileAccuracy;
+import icbm.classic.app.test.tools.math.PanelSinGenerator;
 import icbm.classic.app.test.tools.math.PanelWave;
 import icbm.classic.app.test.tools.path.PanelMissilePath;
 import icbm.classic.app.test.tools.redmatter.PanelRedmatterRender;
@@ -49,6 +50,9 @@ public class MainFrame extends JFrame implements ActionListener
 
         //Sin vs cos
         tabbedPane.addTab("Sin & cos", null, new PanelWave(),  "Calculator and visualizer for cos and sin function");
+
+        //Sin wave generator
+        tabbedPane.addTab("Sin Wave Gen", null, new PanelSinGenerator(),  "Sin Wave generator, useful for testing args for sin wave creation");
 
 
         return tabbedPane;

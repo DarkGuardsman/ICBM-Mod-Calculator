@@ -14,19 +14,22 @@ import java.util.List;
  * @see <a href="https://github.com/BuiltBrokenModding/VoltzEngine/blob/development/license.md">License</a> for what you can and can't do with the code.
  * Created by Dark(DarkGuardsman, Robert) on 3/1/2018.
  */
-public class PanelWave extends JPanel implements ActionListener
+public class PanelSinGenerator extends JPanel implements ActionListener
 {
     public static final String COMMAND_CALCULATE = "calculate";
     public static final String COMMAND_CLEAR = "clear";
 
     PlotPanel plotPanel;
 
-    JTextField segmentsField;
-    JTextField runsField;
+    JTextField timeField;
+    JTextField amplitudeField;
+    JTextField frequencyField;
+    JTextField phaseField;
+    JTextField biasField;
 
     JLabel maxYLabel;
 
-    public PanelWave()
+    public PanelSinGenerator()
     {
         setLayout(new BorderLayout());
 
@@ -64,14 +67,28 @@ public class PanelWave extends JPanel implements ActionListener
         controlPanel.add(new JLabel("Variables"));
         controlPanel.add(new JPanel());
 
-        //Distance field
-        controlPanel.add(new Label("Segments"));
-        controlPanel.add(segmentsField = new JTextField(6));
-        segmentsField.setText("360");
+        //https://www.mathworks.com/help/simulink/slref/sinewave.html?s_tid=gn_loc_drop
 
-        controlPanel.add(new Label("Runs"));
-        controlPanel.add(runsField = new JTextField(6));
-        runsField.setText("10");
+        //Distance field
+        controlPanel.add(new Label("Time"));
+        controlPanel.add(timeField = new JTextField(6));
+        timeField.setText("100");
+
+        controlPanel.add(new Label("Amplitude"));
+        controlPanel.add(amplitudeField = new JTextField(6));
+        amplitudeField.setText("1");
+
+        controlPanel.add(new Label("Frequency"));
+        controlPanel.add(frequencyField = new JTextField(6));
+        frequencyField.setText("10");
+
+        controlPanel.add(new Label("Phase"));
+        controlPanel.add(phaseField = new JTextField(6));
+        phaseField.setText("0");
+
+        controlPanel.add(new Label("Bias"));
+        controlPanel.add(biasField = new JTextField(6));
+        biasField.setText("0");
 
         //Calculate button
         controlPanel.add(new JPanel());
@@ -79,20 +96,6 @@ public class PanelWave extends JPanel implements ActionListener
         calculateButton.setActionCommand(COMMAND_CALCULATE);
         calculateButton.addActionListener(this);
         controlPanel.add(calculateButton);
-
-        //Spacer
-        controlPanel.add(new JPanel());
-        controlPanel.add(new JPanel());
-
-        //---------------------------------------------------------------
-
-
-        //Calculate button
-        controlPanel.add(new JPanel());
-        JButton clearButton = new JButton("Clear Display");
-        clearButton.setActionCommand(COMMAND_CLEAR);
-        clearButton.addActionListener(this);
-        controlPanel.add(clearButton);
 
         //Add and return
         westPanel.add(controlPanel);
@@ -126,23 +129,23 @@ public class PanelWave extends JPanel implements ActionListener
         {
             try
             {
-                int segments = (int) Math.floor(Double.parseDouble(segmentsField.getText().trim()));
-                int runs = (int) Math.floor(Double.parseDouble(runsField.getText().trim()));
+                int time = (int) Double.parseDouble(timeField.getText().trim());
+                double amp = Double.parseDouble(amplitudeField.getText().trim());
+                double hz = Double.parseDouble(frequencyField.getText().trim());
+                double phase = Double.parseDouble(phaseField.getText().trim());
+                double bias = Double.parseDouble(biasField.getText().trim());
 
-                plotPanel.drawLines(segments, 1);
+                //Reset panel state
+                plotPanel.drawLines(hz, amp / 2);
+                plotPanel.clearDisplay();
 
                 //Get data
-                calculateData(segments, runs);
+                calculateData(time, amp, hz, phase, bias);
             }
             catch (Exception e)
             {
                 e.printStackTrace();
             }
-        }
-        else if (event.getActionCommand().equalsIgnoreCase(COMMAND_CLEAR))
-        {
-            //Clear data
-            plotPanel.clearDisplay();
         }
 
         //Draw
@@ -151,57 +154,29 @@ public class PanelWave extends JPanel implements ActionListener
 
     /**
      * Calculates the data points for the
+     *
+     * @param time
+     * @param amp
+     * @param hz
+     * @param phase
+     * @param bias
      */
-    public void calculateData(int segments, int runs)
+    public void calculateData(int time, double amp, double hz, double phase, double bias)
     {
-        //Reference to confirm output http://setosa.io/ev/sine-and-cosine/
-        List<PlotPoint> data = new ArrayList(segments);
+        //https://www.mathworks.com/help/simulink/slref/sinewave.html?s_tid=gn_loc_drop
+        //https://en.wikipedia.org/wiki/Waveform
+        List<PlotPoint> data = new ArrayList(time);
 
-        double degreePerSegment = 360.0 / (double) segments;
-
-        for (int r = 0; r < runs; r++)
+        for (int t = 0; t < time; t++)
         {
-            for (int s = 0; s < segments; s++)
-            {
-                int tick = r * segments + s;
-                double degree = degreePerSegment * s;
-                double radian = Math.toRadians(degree);
+            double value = 2 * Math.PI * t - phase;
+            value /= hz;
+            double sine = Math.sin(value);
+            double y = amp * sine + bias;
 
-                double sine = Math.sin(radian);
-                double cos = Math.cos(radian);
-
-                data.add(new PlotPoint(tick, sine + 1, Color.RED)); //1 offset to fix plot negative
-                data.add(new PlotPoint(tick, cos + 1, Color.BLUE)); //1 offset to fix plot negative
-            }
+            data.add(new PlotPoint(t, y + amp, Color.GREEN)); //amp added to fix negative on display
         }
 
         plotPanel.setData(data);
-    }
-
-    public static int roundUp(int number, int interval)
-    {
-        if (interval == 0)
-        {
-            return 0;
-        }
-        else if (number == 0)
-        {
-            return interval;
-        }
-        else
-        {
-            if (number < 0)
-            {
-                interval *= -1;
-            }
-
-            int i = number % interval;
-            return i == 0 ? number : number + interval - i;
-        }
-    }
-
-    protected void outputDebug(String msg)
-    {
-        System.out.println(msg);
     }
 }
