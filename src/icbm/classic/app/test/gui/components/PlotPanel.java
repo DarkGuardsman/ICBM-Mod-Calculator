@@ -26,7 +26,8 @@ public class PlotPanel extends JPanel
     int plotSizeX = -1;
     int plotSizeY = -1;
 
-    double plotLineSpacing = -1;
+    double plotLineSpacingX = -1;
+    double plotLineSpacingY = -1;
 
     @Override
     protected void paintComponent(Graphics g)
@@ -53,9 +54,12 @@ public class PlotPanel extends JPanel
 
     protected void drawGrid(Graphics2D g2)
     {
-        if (plotLineSpacing > 0)
+        if (plotLineSpacingX > 0)
         {
             drawGridX(g2);
+        }
+        if (plotLineSpacingY > 0)
+        {
             drawGridY(g2);
         }
     }
@@ -71,7 +75,7 @@ public class PlotPanel extends JPanel
         while (current < end)
         {
             //Increase
-            current += plotLineSpacing;
+            current += plotLineSpacingX;
 
             //Get pixel point of x
             int x = PAD + (int) Math.ceil(current * xScale);
@@ -92,7 +96,7 @@ public class PlotPanel extends JPanel
         while (current < end)
         {
             //Increase
-            current += plotLineSpacing;
+            current += plotLineSpacingY;
 
             //Get pixel point of x
             int y = PAD + (int) Math.ceil(current * xScale);
@@ -277,6 +281,13 @@ public class PlotPanel extends JPanel
 
     public void drawLines(double i)
     {
-        plotLineSpacing = i;
+        plotLineSpacingX = i;
+        plotLineSpacingY = i;
+    }
+
+    public void drawLines(double x, double y)
+    {
+        plotLineSpacingX = x;
+        plotLineSpacingY = y;
     }
 }
