@@ -9,6 +9,7 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Simple panel used to draw 2D plot points
@@ -20,6 +21,7 @@ public class PlotPanel extends JPanel
 {
     /** Data to display in the panel */
     protected List<PlotPoint> data = new ArrayList();
+    protected List<Consumer<Graphics2D>> rendersToRun = new ArrayList();
     /** Spacing from each side */
     int PAD = 20;
 
@@ -40,6 +42,7 @@ public class PlotPanel extends JPanel
         drawGrid(g2);
         drawRuler(g2);
         drawData(g2);
+        drawExtras(g2);
     }
 
     /**
@@ -129,28 +132,54 @@ public class PlotPanel extends JPanel
     {
         if (data != null && !data.isEmpty())
         {
-            //Calculate scale to fit display
-            double scaleX = getScaleX();
-            double scaleY = getScaleY();
-
             //Render data points
             for (PlotPoint pos : data)
             {
-                //Get pixel position
-                double x = PAD + scaleX * pos.x();
-                double y = getHeight() - PAD - scaleY * pos.y();
-
-                if (x >= 0 && x <= getWidth() && y <= getHeight())
-                {
-                    //Set color
-                    g2.setPaint(pos.color != null ? pos.color : Color.red);
-
-                    //Draw
-                    g2.fill(new Ellipse2D.Double(x - (pos.size / 2), y - (pos.size / 2), pos.size, pos.size));
-                }
+                drawCircle(g2, pos.color, pos.x, pos.y, pos.size, true);
             }
         }
     }
+
+    public void drawCircle(Graphics2D g2, Color color, double point_x, double point_y, double size, boolean fill)
+    {
+        drawEllipse(g2, color, point_x, point_y, size, size, fill);
+    }
+
+    public void drawEllipse(Graphics2D g2, Color color, double point_x, double point_y, double size_x, double size_y, boolean fill)
+    {
+        //Calculate scale to fit display
+        double scaleX = getScaleX();
+        double scaleY = getScaleY();
+
+        //Get pixel position
+        double x = PAD + scaleX * point_x;
+        double y = getHeight() - PAD - scaleY * point_y;
+
+        if (x >= 0 && x <= getWidth() && y <= getHeight())
+        {
+            //Generate circle
+            Ellipse2D circle = new Ellipse2D.Double(x - (size_x / 2), y - (size_y / 2), size_x, size_y);
+
+            //Set color
+            g2.setPaint(color != null ? color : Color.red);
+
+            //Draw
+            if (fill)
+            {
+                g2.fill(circle);
+            }
+            else
+            {
+                g2.draw(circle);
+            }
+        }
+    }
+
+    protected void drawExtras(Graphics2D g2)
+    {
+        rendersToRun.forEach(render -> render.accept(g2));
+    }
+
 
     /**
      * Scale to draw the data on the screen.
@@ -159,7 +188,7 @@ public class PlotPanel extends JPanel
      *
      * @return scale of view ((width - padding) / size)
      */
-    protected double getScaleX()
+    public double getScaleX()
     {
         return (double) (getWidth() - 2 * PAD) / getDrawMaxX();
     }
@@ -171,7 +200,7 @@ public class PlotPanel extends JPanel
      *
      * @return scale of view ((width - padding) / size)
      */
-    protected double getScaleY()
+    public double getScaleY()
     {
         return (double) (getHeight() - 2 * PAD) / getDrawMaxY();
     }
@@ -289,5 +318,10 @@ public class PlotPanel extends JPanel
     {
         plotLineSpacingX = x;
         plotLineSpacingY = y;
+    }
+
+    public void addRendersToRun(Consumer<Graphics2D> renderFunction)
+    {
+        rendersToRun.add(renderFunction);
     }
 }
