@@ -31,6 +31,11 @@ public class PlotPanel extends JPanel
     double plotLineSpacingX = -1;
     double plotLineSpacingY = -1;
 
+    public PlotPanel()
+    {
+        addComponentListener(new ResizeListenerBoxSize());
+    }
+
     @Override
     protected void paintComponent(Graphics g)
     {
