@@ -52,6 +52,7 @@ public class PanelLargeBlast extends JPanel implements ActionListener
     {
         plotPanel = new PlotPanel();
         plotPanel.setMinimumSize(new Dimension(600, 600));
+        plotPanel.drawLines(1, 1);
         return plotPanel;
     }
 
@@ -70,7 +71,7 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         //Distance field
         controlPanel.add(new Label("size"));
         controlPanel.add(sizeField = new JTextField(6));
-        sizeField.setText(30 + "");
+        sizeField.setText(50 + "");
 
         //Calculate button
         controlPanel.add(new JPanel());
@@ -214,7 +215,7 @@ public class PanelLargeBlast extends JPanel implements ActionListener
                 distance = Math.sqrt(nx * nx + nz * nz);
 
                 //Debug
-                outputDebug(String.format("\tx: %.4f z: %.4f", x, z));
+                //outputDebug(String.format("\tx: %.4f z: %.4f", x, z));
 
                 //add point to plot data
                 data.add(new PlotPoint(x, z, color));
