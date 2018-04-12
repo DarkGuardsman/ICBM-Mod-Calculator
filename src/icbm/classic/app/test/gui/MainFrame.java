@@ -1,5 +1,6 @@
 package icbm.classic.app.test.gui;
 
+import icbm.classic.app.test.tools.blast.PanelLargeBlast;
 import icbm.classic.app.test.tools.gas.PanelGasCloud;
 import icbm.classic.app.test.tools.impact.PanelMissileAccuracy;
 import icbm.classic.app.test.tools.math.PanelSinGenerator;
@@ -42,6 +43,9 @@ public class MainFrame extends JFrame implements ActionListener
 
         //Impact calculator
         tabbedPane.addTab("Accuracy", null, new PanelMissileAccuracy(),  "Calculator and visualizer for missile impact accuracy");
+
+        //Large thread visualizer
+        tabbedPane.addTab("Large Blast Thread", null, new PanelLargeBlast(),  "Visualizer for large thread [rotation based ray trace] used ICBM's Nuclear/Sonic/Rot/Beam Explosive");
 
         //Entity Spawn
         tabbedPane.addTab("Spawning", null, new PanelEntitySpawning(),  "Calculator and visualizer for MC1.12 entity random spawn point generator");
