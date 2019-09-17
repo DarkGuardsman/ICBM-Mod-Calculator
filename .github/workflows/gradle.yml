@@ -13,5 +13,7 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
+   - name: Execute Gradle task
+      uses: MrRamych/gradle-actions@1.0
     - name: Build with Gradle
       run: ./gradlew build
