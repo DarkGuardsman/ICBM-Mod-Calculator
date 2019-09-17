@@ -12,4 +12,4 @@ jobs:
     - name: Built Gradle
       uses: MrRamych/gradle-actions/openjdk-8@2.1
       with: 
-        args: '"build"'
+        args: build
