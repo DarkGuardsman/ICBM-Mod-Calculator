@@ -74,9 +74,25 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         plotPanel.setMinimumSize(new Dimension(600, 600));
         plotPanel.drawLines(1, 1);
         plotPanel.addRendersToRun((plot, g2, stage, stageDone) -> {
-            if (stage == PlotRenderStages.GRID && !stageDone)
+            if (stage == PlotRenderStages.GRID && !stageDone && plot.plotPointData.size() > 0)
             {
+                for (int x = 0; x < plot.getPlotSizeX(); x++)
+                {
+                    for (int y = 0; y < plot.getPlotSizeY(); y++)
+                    {
+                        final int minX = x;
+                        final int maxX = x + 1;
+                        final int minY = y;
+                        final int maxY = y + 1;
+                        final int dotCount = (int) plot.plotPointData.stream()
+                                .filter(dot -> dot.x >= minX && dot.x <= maxX && dot.y >= minY && dot.y <= maxY)
+                                .count();
 
+                        if(dotCount > 0) { //TODO scale color based on number of hits
+                            plot.drawBox(g2, Color.GRAY, x, y + 1, plot.getScaleX(), plot.getScaleY(), true);
+                        }
+                    }
+                }
             }
         });
 
@@ -204,7 +220,7 @@ public class PanelLargeBlast extends JPanel implements ActionListener
                 final int translateY = -minY + 1;
 
                 List<PlotPoint> relocatedData = data.stream().map(point -> {
-                    final PlotPoint dot = new PlotPoint(point.x + translateX, point.y +translateY, point.color, point.size);
+                    final PlotPoint dot = new PlotPoint(point.x + translateX, point.y + translateY, point.color, point.size);
                     point.connections.forEach(connection -> {
                         dot.connections.add(new PlotPoint(connection.x + translateX, connection.y + translateY, connection.color, connection.size));
                     });
@@ -263,7 +279,7 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         for (int yawSlices = 0; yawSlices < lineDensityScale * steps; yawSlices++)
         {
             //Get angles for rotation steps
-            yaw =  (Math.PI / steps) * yawSlices;
+            yaw = (Math.PI / steps) * yawSlices;
             pitch = (Math.PI / steps) * theta_n;
 
             //Debug
@@ -315,7 +331,7 @@ public class PanelLargeBlast extends JPanel implements ActionListener
 
         //Update labels
         stepsLabel.setText(steps + "");
-        lineCountLabel.setText("" +  lineCount);
+        lineCountLabel.setText("" + lineCount);
         rotationCountLabel.setText("" + stepCount);
     }
 

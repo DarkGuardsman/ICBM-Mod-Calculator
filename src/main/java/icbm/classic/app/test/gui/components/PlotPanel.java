@@ -11,6 +11,7 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
+import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +24,7 @@ import java.util.List;
 public class PlotPanel extends JPanel
 {
     /** Data to display in the panel */
-    protected List<PlotPoint> plotPointData = new ArrayList();
+    public List<PlotPoint> plotPointData = new ArrayList(); //TODO add getter and make private
     protected List<PlotRenderCallback> rendersToRun = new ArrayList();
     /** Spacing from each side */
     int PAD = 20;
@@ -116,7 +117,7 @@ public class PlotPanel extends JPanel
         double end = getDrawMaxY();
 
         double current = start;
-        double xScale = getScaleY();
+        double yScale = getScaleY();
 
         while (current < end)
         {
@@ -124,7 +125,7 @@ public class PlotPanel extends JPanel
             current += plotLineSpacingY;
 
             //Get pixel point of x
-            int y = PAD + (int) Math.ceil(current * xScale);
+            int y = PAD + (int) Math.ceil(current * yScale);
 
             //Draw line
             g2.draw(new Line2D.Double(PAD, y, getWidth() - PAD, y));
@@ -201,6 +202,35 @@ public class PlotPanel extends JPanel
         {
             //Generate circle
             Ellipse2D circle = new Ellipse2D.Double(x - (size_x / 2), y - (size_y / 2), size_x, size_y);
+
+            //Set color
+            g2.setPaint(color != null ? color : Color.red);
+
+            //Draw
+            if (fill)
+            {
+                g2.fill(circle);
+            }
+            else
+            {
+                g2.draw(circle);
+            }
+        }
+    }
+
+    public void drawBox(Graphics2D g2, Color color, double point_x, double point_y, double size_x, double size_y, boolean fill) {
+        //Calculate scale to fit display
+        double scaleX = getScaleX();
+        double scaleY = getScaleY();
+
+        //Get pixel position
+        double x = PAD + scaleX * point_x;
+        double y = getHeight() - PAD - scaleY * point_y;
+
+        if (x >= 0 && x <= getWidth() && y <= getHeight())
+        {
+            //Generate circle
+            Rectangle2D circle = new Rectangle2D.Double(x, y, size_x, size_y);
 
             //Set color
             g2.setPaint(color != null ? color : Color.red);
