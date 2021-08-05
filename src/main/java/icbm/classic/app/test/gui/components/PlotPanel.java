@@ -158,9 +158,15 @@ public class PlotPanel extends JPanel
             //Render data points
             for (PlotPoint pos : plotPointData)
             {
-                drawCircle(g2, pos.color, pos.x, pos.y, pos.size, true);
+                if(pos.shouldRender == null || pos.shouldRender.get())
+                {
+                    drawCircle(g2, pos.color, pos.x, pos.y, pos.size, true);
+                }
                 for(PlotPoint connection : pos.connections) {
-                  drawLine(g2, pos, connection);
+                    if(connection.shouldRender == null || connection.shouldRender.get())
+                    {
+                        drawLine(g2, pos, connection);
+                    }
                 }
             }
         }

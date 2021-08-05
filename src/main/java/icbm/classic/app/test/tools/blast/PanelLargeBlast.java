@@ -10,6 +10,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import java.awt.BorderLayout;
+import java.awt.Checkbox;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridLayout;
@@ -44,6 +45,9 @@ public class PanelLargeBlast extends JPanel implements ActionListener
     //Render fields
     JTextField dotSizeField;
     JTextField lineSizeField;
+    Checkbox renderDotsCheckbox;
+    Checkbox renderLinesCheckbox;
+    Checkbox renderHeatmapCheckbox;
 
     Label stepsLabel;
     Label rotationCountLabel;
@@ -74,7 +78,7 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         plotPanel.setMinimumSize(new Dimension(600, 600));
         plotPanel.drawLines(1, 1);
         plotPanel.addRendersToRun((plot, g2, stage, stageDone) -> {
-            if (stage == PlotRenderStages.GRID && !stageDone && plot.plotPointData.size() > 0)
+            if (stage == PlotRenderStages.GRID && !stageDone && plot.plotPointData.size() > 0 && renderHeatmapCheckbox.getState())
             {
                 for (int x = 0; x < plot.getPlotSizeX(); x++)
                 {
@@ -145,6 +149,15 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         controlPanel.add(new Label("Line Size"));
         controlPanel.add(lineSizeField = new JTextField(6));
         lineSizeField.setText("2");
+
+        controlPanel.add(renderDotsCheckbox = new Checkbox("Render Dots"));
+        renderDotsCheckbox.setState(true);
+
+        controlPanel.add(renderLinesCheckbox = new Checkbox("Render Lines"));
+        renderLinesCheckbox.setState(true);
+
+        controlPanel.add(renderHeatmapCheckbox = new Checkbox("Render Heatmap"));
+        renderHeatmapCheckbox.setState(true);
 
         //Calculate button
         controlPanel.add(new JPanel());
@@ -232,10 +245,13 @@ public class PanelLargeBlast extends JPanel implements ActionListener
                 final int translateX = -minX + 1; //+1 for edge
                 final int translateY = -minY + 1;
 
-                List<PlotPoint> relocatedData = data.stream().map(point -> {
+                final List<PlotPoint> relocatedData = data.stream().map(point -> {
                     final PlotPoint dot = new PlotPoint(point.x + translateX, point.y + translateY, point.color, point.size);
+                    dot.shouldRender = this::shouldRenderDots;
                     point.connections.forEach(connection -> {
-                        dot.connections.add(new PlotPoint(connection.x + translateX, connection.y + translateY, connection.color, connection.size));
+                        final PlotPoint line = new PlotPoint(connection.x + translateX, connection.y + translateY, connection.color, connection.size);
+                        line.shouldRender = this::shouldRenderLines;
+                        dot.connections.add(line);
                     });
                     return dot;
                 }).collect(Collectors.toList());
@@ -257,6 +273,14 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         }
 
         plotPanel.repaint();
+    }
+
+    public boolean shouldRenderLines() {
+        return renderLinesCheckbox.getState();
+    }
+
+    public boolean shouldRenderDots() {
+        return renderDotsCheckbox.getState();
     }
 
     /**

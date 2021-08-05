@@ -3,6 +3,7 @@ package icbm.classic.app.test.data;
 import java.awt.Color;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * 2D data point with color
@@ -16,6 +17,8 @@ public class PlotPoint
     public final double y;
     public final Color color;
     public final int size;
+
+    public Supplier<Boolean> shouldRender;
 
     public final List<PlotPoint> connections = new LinkedList();
 
