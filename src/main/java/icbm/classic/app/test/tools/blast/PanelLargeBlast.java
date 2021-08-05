@@ -89,7 +89,8 @@ public class PanelLargeBlast extends JPanel implements ActionListener
                                 .count();
 
                         if(dotCount > 0) { //TODO scale color based on number of hits
-                            plot.drawBox(g2, Color.GRAY, x, y + 1, plot.getScaleX(), plot.getScaleY(), true);
+                            Color color = getColorForValue(dotCount, 0, 10);
+                            plot.drawBox(g2, color, x, y + 1, plot.getScaleX(), plot.getScaleY(), true);
                         }
                     }
                 }
@@ -97,6 +98,18 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         });
 
         return plotPanel;
+    }
+
+    private Color getColorForValue(double value, float min, float max) {
+
+        final float BLUE_HUE = Color.RGBtoHSB(0, 0, 255, new float[3])[0];
+        final float RED_HUE = Color.RGBtoHSB(255, 0, 0, new float[3])[0];
+
+        if (value < min || value > max) {
+            return Color.BLACK ;
+        }
+        final float hue = BLUE_HUE + (float)((RED_HUE - BLUE_HUE) * (value - min) / (max - min));
+        return Color.getHSBColor(hue, 1.0f, 1.0f);
     }
 
     protected JPanel buildWestSection()
