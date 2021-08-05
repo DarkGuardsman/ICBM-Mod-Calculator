@@ -1,6 +1,8 @@
 package icbm.classic.app.test.data;
 
-import java.awt.*;
+import java.awt.Color;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * 2D data point with color
@@ -12,20 +14,22 @@ public class PlotPoint
 {
     public final double x;
     public final double y;
-    public Color color;
-    public int size = 4;
+    public final Color color;
+    public final int size;
+
+    public final List<PlotPoint> connections = new LinkedList();
 
 
     public PlotPoint(double x, double y, Color color)
     {
-        this.x = x;
-        this.y = y;
-        this.color = color;
+       this(x, y, color, 4);
     }
 
     public PlotPoint(double x, double y, Color color, int size)
     {
-        this(x, y, color);
+        this.x = x;
+        this.y = y;
+        this.color = color;
         this.size = size;
     }
 

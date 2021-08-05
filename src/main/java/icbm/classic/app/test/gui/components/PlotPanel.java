@@ -141,8 +141,28 @@ public class PlotPanel extends JPanel
             for (PlotPoint pos : data)
             {
                 drawCircle(g2, pos.color, pos.x, pos.y, pos.size, true);
+                for(PlotPoint connection : pos.connections) {
+                  drawLine(g2, pos, connection);
+                }
             }
         }
+    }
+
+    public void drawLine(Graphics2D g2, PlotPoint pointData, PlotPoint lineData) {
+
+        //Calculate scale to fit display
+        double scaleX = getScaleX();
+        double scaleY = getScaleY();
+
+        //Get pixel position
+        double startX = PAD + scaleX * pointData.x;
+        double startY = getHeight() - PAD - scaleY * pointData.y;
+        double endX = PAD + scaleX * lineData.x;
+        double endY = getHeight() - PAD - scaleY * lineData.y;
+
+        g2.setPaint(lineData.color != null ? lineData.color : Color.red);
+        g2.setStroke(new BasicStroke(lineData.size));
+        g2.draw(new Line2D.Double(startX, startY, endX, endY));
     }
 
     public void drawCircle(Graphics2D g2, Color color, double point_x, double point_y, double size, boolean fill)
