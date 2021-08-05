@@ -2,6 +2,7 @@ package icbm.classic.app.test.tools.blast;
 
 import icbm.classic.app.test.data.PlotPoint;
 import icbm.classic.app.test.gui.components.PlotPanel;
+import icbm.classic.app.test.tools.Utils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,7 +26,13 @@ public class PanelLargeBlast extends JPanel implements ActionListener
     public static final String COMMAND_CLEAR = "clear";
 
     PlotPanel plotPanel;
+
+    //Settings field
     JTextField sizeField;
+
+    //Render fields
+    JTextField dotSizeField;
+    JTextField lineSizeField;
 
     Label stepsLabel;
 
@@ -72,6 +79,23 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         controlPanel.add(new Label("size"));
         controlPanel.add(sizeField = new JTextField(6));
         sizeField.setText(50 + "");
+
+        //Spacer
+        controlPanel.add(new JPanel());
+        controlPanel.add(new JPanel());
+
+        //Spacer
+        controlPanel.add(new JLabel("Render Settings"));
+        controlPanel.add(new JPanel());
+
+        //Distance field
+        controlPanel.add(new Label("Dot Size"));
+        controlPanel.add(dotSizeField = new JTextField(6));
+        dotSizeField.setText("6");
+
+        controlPanel.add(new Label("Line Size"));
+        controlPanel.add(lineSizeField = new JTextField(6));
+        lineSizeField.setText("2");
 
         //Calculate button
         controlPanel.add(new JPanel());
@@ -127,17 +151,23 @@ public class PanelLargeBlast extends JPanel implements ActionListener
             try
             {
                 //Get data
-                double size = Double.parseDouble(sizeField.getText().trim());
-                double bound_d = size * 2 + size * 0.1; //10% edge spacer
+                final double size = Double.parseDouble(sizeField.getText().trim());
+                final int dotRenderSize =  (int)Math.floor(Double.parseDouble(dotSizeField.getText().trim()));
+                final int lineRenderSize =  (int)Math.floor(Double.parseDouble(lineSizeField.getText().trim()));
+
+                double bound_d = size * 2 + Math.ceil(size * 0.2); //20% edge spacer
 
                 //Linked list is faster to add nodes, as an array will resize
-                List<PlotPoint> data = new LinkedList();
+                final List<PlotPoint> data = new LinkedList();
 
                 //Draw data
-                calculateData(data, randomColor(), size, bound_d / 2, bound_d / 2, 0); //Set phi_n to zero due to being 2D, this should control pitch but we only need yaw
+                final double centerX = Math.ceil(bound_d / 2) + 0.5;
+                final double centerZ = Math.ceil(bound_d / 2) + 0.5;
+                calculateData(data, Color.BLACK, dotRenderSize, lineRenderSize, size, centerX, centerZ, 0);
+                //Set phi_n to zero due to being 2D, this should control pitch but we only need yaw
 
                 //Set render bounds
-                int bound_i = (int) Math.ceil(bound_d);
+                final int bound_i = (int) Math.ceil(bound_d);
                 plotPanel.setPlotSize(bound_i, bound_i);
 
                 //Set data into plot
@@ -157,16 +187,13 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         plotPanel.repaint();
     }
 
-    //Creates a random color for use
-    private Color randomColor()
-    {
-        return new Color((int) (255f * Math.random()), (int) (255f * Math.random()), (int) (255f * Math.random()));
-    }
-
     /**
      * Calculates the data points for the
      */
-    public void calculateData(final List<PlotPoint> data, final Color color, final double size, final double cx, final double cz, final int theta_n)
+    public void calculateData(final List<PlotPoint> data,
+                              final Color color, final int dotRenderSize, final int lineRenderSize,
+                              final double size, final double cx, final double cz,
+                              final int theta_n)
     {
         //How many steps to go per rotation
         final int steps = (int) Math.ceil(Math.PI / Math.atan(1.0D / size));
@@ -183,6 +210,9 @@ public class PanelLargeBlast extends JPanel implements ActionListener
 
 
         double nx, nz;
+
+        final PlotPoint centerDot = new PlotPoint(cx, cz, color, dotRenderSize * 2);
+        data.add(centerDot);
 
         for (int phi_n = 0; phi_n < 2 * steps; phi_n++)
         {
@@ -206,6 +236,8 @@ public class PanelLargeBlast extends JPanel implements ActionListener
             z = cz;
 
             double distance = 0;
+            PlotPoint previousPlot = centerDot;
+            final Color lineColor = Utils.randomColor();
             //Trace from start to end
             while ((dx * dx + dz * dz) > 0 && distance <= size)
             {
@@ -218,7 +250,9 @@ public class PanelLargeBlast extends JPanel implements ActionListener
                 //outputDebug(String.format("\tx: %.4f z: %.4f", x, z));
 
                 //add point to plot data
-                data.add(new PlotPoint(x, z, color));
+                final PlotPoint dot = new PlotPoint(x, z, color, dotRenderSize);
+                previousPlot.connections.add(new PlotPoint(x, z, lineColor, lineRenderSize)); //TODO add field for line size
+                data.add(dot);
 
                 //Move forward
                 x += dx;
