@@ -3,13 +3,16 @@ package icbm.classic.app.test.gui.components;
 
 import icbm.classic.app.test.data.PlotPoint;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JPanel;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * Simple panel used to draw 2D plot points
@@ -20,8 +23,8 @@ import java.util.function.Consumer;
 public class PlotPanel extends JPanel
 {
     /** Data to display in the panel */
-    protected List<PlotPoint> data = new ArrayList();
-    protected List<Consumer<Graphics2D>> rendersToRun = new ArrayList();
+    protected List<PlotPoint> plotPointData = new ArrayList();
+    protected List<PlotRenderCallback> rendersToRun = new ArrayList();
     /** Spacing from each side */
     int PAD = 20;
 
@@ -43,11 +46,25 @@ public class PlotPanel extends JPanel
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.START, true));
+
+        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.BOARD, false));
         drawBorder(g2);
+        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.BOARD, true));
+
+        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.GRID, false));
         drawGrid(g2);
+        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.GRID, true));
+
+        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.RULER, false));
         drawRuler(g2);
+        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.RULER, true));
+
+        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.DATA, false));
         drawData(g2);
-        drawExtras(g2);
+        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.DATA, true));
+
+        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.START, false));
     }
 
     /**
@@ -135,10 +152,10 @@ public class PlotPanel extends JPanel
      */
     protected void drawData(Graphics2D g2)
     {
-        if (data != null && !data.isEmpty())
+        if (plotPointData != null && !plotPointData.isEmpty())
         {
             //Render data points
-            for (PlotPoint pos : data)
+            for (PlotPoint pos : plotPointData)
             {
                 drawCircle(g2, pos.color, pos.x, pos.y, pos.size, true);
                 for(PlotPoint connection : pos.connections) {
@@ -200,11 +217,6 @@ public class PlotPanel extends JPanel
         }
     }
 
-    protected void drawExtras(Graphics2D g2)
-    {
-        rendersToRun.forEach(render -> render.accept(g2));
-    }
-
 
     /**
      * Scale to draw the data on the screen.
@@ -248,7 +260,7 @@ public class PlotPanel extends JPanel
     public double getPointMaxY()
     {
         double max = -Integer.MAX_VALUE;
-        for (PlotPoint pos : data)
+        for (PlotPoint pos : plotPointData)
         {
             if (pos.y() > max)
             {
@@ -266,7 +278,7 @@ public class PlotPanel extends JPanel
     public double getPointMaxX()
     {
         double max = -Integer.MAX_VALUE;
-        for (PlotPoint pos : data)
+        for (PlotPoint pos : plotPointData)
         {
             if (pos.x() > max)
             {
@@ -304,11 +316,11 @@ public class PlotPanel extends JPanel
     /**
      * Sets the data to draw
      *
-     * @param data
+     * @param plotPointData
      */
-    public void setData(List<PlotPoint> data)
+    public void setPlotPointData(List<PlotPoint> plotPointData)
     {
-        this.data = data;
+        this.plotPointData = plotPointData;
     }
 
     /**
@@ -318,18 +330,18 @@ public class PlotPanel extends JPanel
      */
     public void addData(List<PlotPoint> data)
     {
-        if (this.data == null)
+        if (this.plotPointData == null)
         {
-            this.data = new ArrayList();
+            this.plotPointData = new ArrayList();
         }
-        this.data.addAll(data);
+        this.plotPointData.addAll(data);
     }
 
     public void clearDisplay()
     {
-        if (this.data != null)
+        if (this.plotPointData != null)
         {
-            this.data.clear();
+            this.plotPointData.clear();
         }
     }
 
@@ -345,7 +357,7 @@ public class PlotPanel extends JPanel
         plotLineSpacingY = y;
     }
 
-    public void addRendersToRun(Consumer<Graphics2D> renderFunction)
+    public void addRendersToRun(PlotRenderCallback renderFunction)
     {
         rendersToRun.add(renderFunction);
     }

@@ -192,7 +192,7 @@ public class PanelEntitySpawning extends JPanel implements ActionListener
                 }
             }
         }
-        plotPanel.setData(data);
+        plotPanel.setPlotPointData(data);
     }
 
     public static int roundUp(int number, int interval)

@@ -383,7 +383,7 @@ public class PanelMissilePath extends JPanel implements ActionListener
         //Set data into display
         if (!addToExistingData)
         {
-            plotPanel.setData(data);
+            plotPanel.setPlotPointData(data);
         }
         else
         {

@@ -177,6 +177,6 @@ public class PanelSinGenerator extends JPanel implements ActionListener
             data.add(new PlotPoint(t, y + amp, Color.GREEN)); //amp added to fix negative on display
         }
 
-        plotPanel.setData(data);
+        plotPanel.setPlotPointData(data);
     }
 }

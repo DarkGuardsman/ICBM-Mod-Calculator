@@ -148,7 +148,7 @@ public class PanelRedmatterBlast extends JPanel implements ActionListener
                 //Draw data
                 List<PlotPoint> data = new ArrayList((int) Math.floor(radius * radius * radius));
                 calculateData(data, radius);
-                plotPanel.setData(data);
+                plotPanel.setPlotPointData(data);
                 plotPanel.repaint();
             }
             catch (Exception e)

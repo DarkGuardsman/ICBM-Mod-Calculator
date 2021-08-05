@@ -164,7 +164,7 @@ public class PanelRedmatterRender extends JPanel implements ActionListener
                 //Draw data
                 List<PlotPoint> data = new ArrayList(count);
                 calculateData(data, count, scale);
-                plotPanel.setData(data);
+                plotPanel.setPlotPointData(data);
                 plotPanel.repaint();
             }
             catch (Exception e)

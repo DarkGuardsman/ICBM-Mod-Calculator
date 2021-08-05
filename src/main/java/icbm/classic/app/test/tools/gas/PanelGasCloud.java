@@ -2,9 +2,18 @@ package icbm.classic.app.test.tools.gas;
 
 import icbm.classic.app.test.data.PlotPoint;
 import icbm.classic.app.test.gui.components.PlotPanel;
+import icbm.classic.app.test.gui.components.PlotRenderStages;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.GridLayout;
+import java.awt.Label;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -134,7 +143,12 @@ public class PanelGasCloud extends JPanel implements ActionListener
                 }
 
                 //Draw radius
-                plotPanel.addRendersToRun(g2 -> drawRadius(g2, plotPanel.getPlotSizeX() / 2.0, plotPanel.getPlotSizeY() / 2.0, radius, Color.BLACK));
+                plotPanel.addRendersToRun((panel, g2, stage, stageDone) -> {
+                    if (stage == PlotRenderStages.END)
+                    {
+                        drawRadius(g2, plotPanel.getPlotSizeX() / 2.0, plotPanel.getPlotSizeY() / 2.0, radius, Color.BLACK);
+                    }
+                });
             }
             catch (Exception e)
             {

@@ -201,7 +201,7 @@ public class PanelMissileAccuracy extends JPanel implements ActionListener
         }
         else
         {
-            plotPanel.setData(data);
+            plotPanel.setPlotPointData(data);
         }
     }
 
