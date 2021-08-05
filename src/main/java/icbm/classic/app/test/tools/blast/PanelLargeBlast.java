@@ -2,17 +2,28 @@ package icbm.classic.app.test.tools.blast;
 
 import icbm.classic.app.test.data.PlotPoint;
 import icbm.classic.app.test.gui.components.PlotPanel;
+import icbm.classic.app.test.gui.components.PlotRenderStages;
 import icbm.classic.app.test.tools.Utils;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.awt.Label;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.lang.Math.cos;
 import static java.lang.Math.sin;
+import static java.lang.Math.toDegrees;
 
 /**
  * Visualizer for ICBM-Classic's Large Explosion alg
@@ -35,6 +46,8 @@ public class PanelLargeBlast extends JPanel implements ActionListener
     JTextField lineSizeField;
 
     Label stepsLabel;
+    Label rotationCountLabel;
+    Label lineCountLabel;
 
     public PanelLargeBlast()
     {
@@ -60,6 +73,13 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         plotPanel = new PlotPanel();
         plotPanel.setMinimumSize(new Dimension(600, 600));
         plotPanel.drawLines(1, 1);
+        plotPanel.addRendersToRun((plot, g2, stage, stageDone) -> {
+            if (stage == PlotRenderStages.GRID && !stageDone)
+            {
+
+            }
+        });
+
         return plotPanel;
     }
 
@@ -78,7 +98,7 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         //Distance field
         controlPanel.add(new Label("size"));
         controlPanel.add(sizeField = new JTextField(6));
-        sizeField.setText(50 + "");
+        sizeField.setText("10");
 
         //Spacer
         controlPanel.add(new JPanel());
@@ -138,6 +158,14 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         controlPanel.add(new Label("Steps"));
         controlPanel.add(stepsLabel = new Label("--"));
 
+        //rotations or large lines
+        controlPanel.add(new Label("Rotations"));
+        controlPanel.add(rotationCountLabel = new Label("--"));
+
+        //small line count
+        controlPanel.add(new Label("Lines"));
+        controlPanel.add(lineCountLabel = new Label("--"));
+
         //Add and return
         westPanel.add(controlPanel);
         return westPanel;
@@ -152,26 +180,41 @@ public class PanelLargeBlast extends JPanel implements ActionListener
             {
                 //Get data
                 final double size = Double.parseDouble(sizeField.getText().trim());
-                final int dotRenderSize =  (int)Math.floor(Double.parseDouble(dotSizeField.getText().trim()));
-                final int lineRenderSize =  (int)Math.floor(Double.parseDouble(lineSizeField.getText().trim()));
-
-                double bound_d = size * 2 + Math.ceil(size * 0.2); //20% edge spacer
+                final int dotRenderSize = (int) Math.floor(Double.parseDouble(dotSizeField.getText().trim()));
+                final int lineRenderSize = (int) Math.floor(Double.parseDouble(lineSizeField.getText().trim()));
 
                 //Linked list is faster to add nodes, as an array will resize
                 final List<PlotPoint> data = new LinkedList();
 
                 //Draw data
-                final double centerX = Math.ceil(bound_d / 2) + 0.5;
-                final double centerZ = Math.ceil(bound_d / 2) + 0.5;
+                final double centerX = Math.ceil(size / 2) + 0.5;
+                final double centerZ = Math.ceil(size / 2) + 0.5;
                 calculateData(data, Color.BLACK, dotRenderSize, lineRenderSize, size, centerX, centerZ, 0);
                 //Set phi_n to zero due to being 2D, this should control pitch but we only need yaw
 
                 //Set render bounds
-                final int bound_i = (int) Math.ceil(bound_d);
-                plotPanel.setPlotSize(bound_i, bound_i);
+                final int maxX = (int) Math.ceil(data.stream().map(p -> p.x).max(Comparator.comparingDouble(p -> p)).get());
+                final int minX = (int) Math.ceil(data.stream().map(p -> p.x).min(Comparator.comparingDouble(p -> p)).get());
+                final int maxY = (int) Math.ceil(data.stream().map(p -> p.y).max(Comparator.comparingDouble(p -> p)).get());
+                final int minY = (int) Math.ceil(data.stream().map(p -> p.y).min(Comparator.comparingDouble(p -> p)).get());
+
+                plotPanel.setPlotSize(maxX - minX + 2, maxY - minY + 2); //+2 for edge
+
+                final int translateX = -minX + 1; //+1 for edge
+                final int translateY = -minY + 1;
+
+                List<PlotPoint> relocatedData = data.stream().map(point -> {
+                    final PlotPoint dot = new PlotPoint(point.x + translateX, point.y +translateY, point.color, point.size);
+                    point.connections.forEach(connection -> {
+                        dot.connections.add(new PlotPoint(connection.x + translateX, connection.y + translateY, connection.color, connection.size));
+                    });
+                    return dot;
+                }).collect(Collectors.toList());
 
                 //Set data into plot
-                plotPanel.setData(data);
+                plotPanel.setPlotPointData(relocatedData);
+
+
             }
             catch (Exception e)
             {
@@ -197,7 +240,6 @@ public class PanelLargeBlast extends JPanel implements ActionListener
     {
         //How many steps to go per rotation
         final int steps = (int) Math.ceil(Math.PI / Math.atan(1.0D / size));
-        stepsLabel.setText(steps + "");
 
         double x;
         double z;
@@ -214,14 +256,18 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         final PlotPoint centerDot = new PlotPoint(cx, cz, color, dotRenderSize * 2);
         data.add(centerDot);
 
-        for (int phi_n = 0; phi_n < 2 * steps; phi_n++)
+        int lineCount = 0;
+        int stepCount = 0;
+
+        final int lineDensityScale = 2;
+        for (int yawSlices = 0; yawSlices < lineDensityScale * steps; yawSlices++)
         {
             //Get angles for rotation steps
-            yaw = Math.PI * 2 / steps * phi_n;
-            pitch = Math.PI / steps * theta_n;
+            yaw =  (Math.PI / steps) * yawSlices;
+            pitch = (Math.PI / steps) * theta_n;
 
             //Debug
-            outputDebug(String.format("Step[%s] Yaw: %.4f Pitch: %.4f", phi_n, yaw, pitch));
+            outputDebug(String.format("Step[%s] Yaw: %.4f (%.4f) Pitch: %.4f (%.4f)", yawSlices, yaw, toDegrees(yaw) % 360, pitch, toDegrees(pitch)));
 
             //Figure out vector to move for trace (cut in half to improve trace skipping blocks)
             dx = cos(pitch) * cos(yaw) * 0.5;
@@ -258,8 +304,19 @@ public class PanelLargeBlast extends JPanel implements ActionListener
                 x += dx;
                 //y += dy;
                 z += dz;
+
+                //Track number of lines created
+                lineCount++;
             }
+
+            //Track rotation
+            stepCount++;
         }
+
+        //Update labels
+        stepsLabel.setText(steps + "");
+        lineCountLabel.setText("" +  lineCount);
+        rotationCountLabel.setText("" + stepCount);
     }
 
     protected void outputDebug(String msg)
