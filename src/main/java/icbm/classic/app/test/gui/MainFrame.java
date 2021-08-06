@@ -45,7 +45,7 @@ public class MainFrame extends JFrame implements ActionListener
         tabbedPane.addTab("Accuracy", null, new PanelMissileAccuracy(),  "Calculator and visualizer for missile impact accuracy");
 
         //Large thread visualizer
-        tabbedPane.addTab("Large Blast Thread", null, new PanelLargeBlast(),  "Visualizer for large thread [rotation based ray trace] used ICBM's Nuclear/Sonic/Rot/Beam Explosive");
+        tabbedPane.addTab("Blast Raytracing", null, new PanelLargeBlast(),  "Visualizer for large thread [rotation based ray trace] used ICBM's Nuclear/Sonic/Rot/Beam Explosive");
 
         //Entity Spawn
         tabbedPane.addTab("Spawning", null, new PanelEntitySpawning(),  "Calculator and visualizer for MC1.12 entity random spawn point generator");

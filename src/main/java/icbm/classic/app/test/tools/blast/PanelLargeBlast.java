@@ -6,6 +6,7 @@ import icbm.classic.app.test.gui.components.PlotRenderStages;
 import icbm.classic.app.test.tools.Utils;
 
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
@@ -20,6 +21,7 @@ import java.awt.event.ActionListener;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.cos;
@@ -41,6 +43,8 @@ public class PanelLargeBlast extends JPanel implements ActionListener
 
     //Settings field
     JTextField sizeField;
+    JComboBox<String> algSelected;
+    Checkbox normalizeVectorCheckbox;
 
     //Render fields
     JTextField dotSizeField;
@@ -92,7 +96,8 @@ public class PanelLargeBlast extends JPanel implements ActionListener
                                 .filter(dot -> dot.x >= minX && dot.x <= maxX && dot.y >= minY && dot.y <= maxY)
                                 .count();
 
-                        if(dotCount > 0) { //TODO scale color based on number of hits
+                        if (dotCount > 0)
+                        { //TODO scale color based on number of hits
                             Color color = getColorForValue(dotCount, 0, 10);
                             plot.drawBox(g2, color, x, y + 1, plot.getScaleX(), plot.getScaleY(), true);
                         }
@@ -104,15 +109,17 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         return plotPanel;
     }
 
-    private Color getColorForValue(double value, float min, float max) {
+    private Color getColorForValue(double value, float min, float max)
+    {
 
         final float BLUE_HUE = Color.RGBtoHSB(0, 0, 255, new float[3])[0];
         final float RED_HUE = Color.RGBtoHSB(255, 0, 0, new float[3])[0];
 
-        if (value < min || value > max) {
-            return Color.BLACK ;
+        if (value < min || value > max)
+        {
+            return Color.BLACK;
         }
-        final float hue = BLUE_HUE + (float)((RED_HUE - BLUE_HUE) * (value - min) / (max - min));
+        final float hue = BLUE_HUE + (float) ((RED_HUE - BLUE_HUE) * (value - min) / (max - min));
         return Color.getHSBColor(hue, 1.0f, 1.0f);
     }
 
@@ -128,10 +135,20 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         controlPanel.add(new JLabel("Variables"));
         controlPanel.add(new JPanel());
 
+        //Alg selection
+        controlPanel.add(new Label("Alg"));
+        controlPanel.add(algSelected = new JComboBox<String>(new String[]{"Blast Large", "E TNT", "RAY CUBE", "RAY CIRCLE", "EDGE CUBE"}));
+        algSelected.setSelectedIndex(0);
+
         //Distance field
-        controlPanel.add(new Label("size"));
+        controlPanel.add(new Label("Size"));
         controlPanel.add(sizeField = new JTextField(6));
         sizeField.setText("10");
+
+        //TODO hide or disable if not selecting TNT
+        controlPanel.add(new Label("Normalize Vector"));
+        controlPanel.add(normalizeVectorCheckbox = new Checkbox());
+        normalizeVectorCheckbox.setState(true);
 
         //Spacer
         controlPanel.add(new JPanel());
@@ -150,13 +167,16 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         controlPanel.add(lineSizeField = new JTextField(6));
         lineSizeField.setText("2");
 
-        controlPanel.add(renderDotsCheckbox = new Checkbox("Render Dots"));
+        controlPanel.add(new Label("Render Dots"));
+        controlPanel.add(renderDotsCheckbox = new Checkbox());
         renderDotsCheckbox.setState(true);
 
-        controlPanel.add(renderLinesCheckbox = new Checkbox("Render Lines"));
+        controlPanel.add(new Label("Render Lines"));
+        controlPanel.add(renderLinesCheckbox = new Checkbox());
         renderLinesCheckbox.setState(true);
 
-        controlPanel.add(renderHeatmapCheckbox = new Checkbox("Render Heatmap"));
+        controlPanel.add(new Label("Render Heatmap"));
+        controlPanel.add(renderHeatmapCheckbox = new Checkbox());
         renderHeatmapCheckbox.setState(true);
 
         //Calculate button
@@ -231,8 +251,40 @@ public class PanelLargeBlast extends JPanel implements ActionListener
                 //Draw data
                 final double centerX = Math.ceil(size / 2) + 0.5;
                 final double centerZ = Math.ceil(size / 2) + 0.5;
-                calculateData(data, Color.BLACK, dotRenderSize, lineRenderSize, size, centerX, centerZ, 0);
-                //Set phi_n to zero due to being 2D, this should control pitch but we only need yaw
+
+                final int selectedAlg = algSelected.getSelectedIndex();
+
+                //Blast large
+                if (selectedAlg == 0)
+                {
+                    //Set phi_n to zero due to being 2D, this should control pitch but we only need yaw
+                    calculateLargeBlast(data, Color.BLACK, dotRenderSize, lineRenderSize, size, centerX, centerZ, 0);
+                }
+                //Vanilla TNT with ICBM spice
+                else if (selectedAlg == 1)
+                {
+                    calculateTntBlast(data, Color.BLACK, dotRenderSize, lineRenderSize, (float)size, centerX, centerZ);
+                }
+                //Badly optimized redmatter that used a ray trace per cube
+                else if (selectedAlg == 2)
+                {
+                    calculateRayTraceEveryBlockAsBox(data, Color.BLACK, dotRenderSize, lineRenderSize, (float)size, centerX, centerZ);
+                }
+                //Badly optimized redmatter that used a ray trace per cube
+                else if (selectedAlg == 3)
+                {
+                    calculateRayTraceEveryBlockAsCircle(data, Color.BLACK, dotRenderSize, lineRenderSize, (float)size, centerX, centerZ);
+                }
+                //Ray trace edge blocks only
+                else if (selectedAlg == 4)
+                {
+                    calculateRayTraceEdgeBlockAsBox(    data, Color.BLACK, dotRenderSize, lineRenderSize, (float)size, centerX, centerZ);
+                }
+                else
+                {
+                    return;
+                }
+
 
                 //Set render bounds
                 final int maxX = (int) Math.ceil(data.stream().map(p -> p.x).max(Comparator.comparingDouble(p -> p)).get());
@@ -275,21 +327,91 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         plotPanel.repaint();
     }
 
-    public boolean shouldRenderLines() {
+    public boolean shouldRenderLines()
+    {
         return renderLinesCheckbox.getState();
     }
 
-    public boolean shouldRenderDots() {
+    public boolean shouldRenderDots()
+    {
         return renderDotsCheckbox.getState();
+    }
+
+    public void calculateTntBlast(final List<PlotPoint> data,
+                                  final Color color, final int dotRenderSize, final int lineRenderSize,
+                                  final float size, final double cx, final double cz)
+    {
+
+        final Random random = new Random();
+        final PlotPoint centerDot = new PlotPoint(cx, cz, color, dotRenderSize * 2);
+        data.add(centerDot);
+
+        final int raysPerAxis = 16;
+        for (int xs = 0; xs < raysPerAxis; ++xs)
+        {
+            //for (int ys = 0; ys < this.raysPerAxis; ++ys)
+            //final int ys = 0;
+            for (int zs = 0; zs < raysPerAxis; ++zs)
+            {
+                if (xs == 0 || xs == raysPerAxis - 1 || /*ys == 0 || ys == raysPerAxis - 1 ||*/ zs == 0 || zs == raysPerAxis - 1)
+                {
+                    //Debug
+                    outputDebug(String.format("Step[%s,%s]: ", xs, zs));
+
+                    //Step calculation, between -1 to 1 creating edge slices of a cube
+                    double xStep = xs / (raysPerAxis - 1.0F) * 2.0F - 1.0F;
+                    //double yStep = ys / (raysPerAxis - 1.0F) * 2.0F - 1.0F;
+                    double zStep = zs / (raysPerAxis - 1.0F) * 2.0F - 1.0F;
+
+                    outputDebug(String.format("\txStep: %.4f zStep: %.4f", xStep, zStep));
+
+                    //Distance
+                    final double magnitude = Math.sqrt(xStep * xStep + /*yStep * yStep +*/ zStep * zStep);
+
+                    //normalize, takes it from a box shape to a circle shape
+                    if(normalizeVectorCheckbox.getState())
+                    {
+                        xStep /= magnitude;
+                        //yStep /= diagonalDistance;
+                        zStep /= magnitude;
+                    }
+
+                    outputDebug(String.format("\tdx: %.4f dz: %.4f", xStep, zStep));
+
+                    //Get energy
+                    float radialEnergy = size; //* (0.7F + random.nextFloat() * 0.6F);
+
+                    //Get starting point for ray
+                    double x = cx;
+                    //double y = this.location.y();
+                    double z = cz;
+
+                    PlotPoint previousPlot = centerDot;
+                    final Color lineColor = Utils.randomColor();
+
+                    for (float step = 0.3F; radialEnergy > 0.0F; radialEnergy -= step * 0.75F)
+                    {
+                        final PlotPoint dot = new PlotPoint(x, z, color, dotRenderSize);
+                        previousPlot.connections.add(new PlotPoint(x, z, lineColor, lineRenderSize)); //TODO add field for line size
+                        data.add(dot);
+
+                        //Iterate location
+                        x += xStep * step;
+                        //y += yStep * step;
+                        z += zStep * step;
+                    }
+                }
+            }
+        }
     }
 
     /**
      * Calculates the data points for the
      */
-    public void calculateData(final List<PlotPoint> data,
-                              final Color color, final int dotRenderSize, final int lineRenderSize,
-                              final double size, final double cx, final double cz,
-                              final int theta_n)
+    public void calculateLargeBlast(final List<PlotPoint> data,
+                                    final Color color, final int dotRenderSize, final int lineRenderSize,
+                                    final double size, final double cx, final double cz,
+                                    final int theta_n)
     {
         //How many steps to go per rotation
         final int steps = (int) Math.ceil(Math.PI / Math.atan(1.0D / size));
@@ -370,6 +492,80 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         stepsLabel.setText(steps + "");
         lineCountLabel.setText("" + lineCount);
         rotationCountLabel.setText("" + stepCount);
+    }
+
+
+    public void calculateRayTraceEveryBlockAsBox(final List<PlotPoint> data,
+                                                 final Color color, final int dotRenderSize, final int lineRenderSize,
+                                                 final double size, final double cx, final double cz)
+    {
+        final PlotPoint centerDot = new PlotPoint(cx, cz, color, dotRenderSize * 2);
+        data.add(centerDot);
+
+        BlastHelpers.forEachPosInCube((int)size, (int)size, (xx, zz) -> {
+            double x = xx + cx;
+            double z = zz + cz;
+            final PlotPoint dot = new PlotPoint(x, z, color, dotRenderSize);
+            centerDot.connections.add(new PlotPoint(x, z, Utils.randomColor(), lineRenderSize));
+            data.add(dot);
+        });
+    }
+
+    public void calculateRayTraceEdgeBlockAsBox(final List<PlotPoint> data,
+                                                 final Color color, final int dotRenderSize, final int lineRenderSize,
+                                                 final double size, final double cx, final double cz)
+    {
+        final PlotPoint centerDot = new PlotPoint(cx, cz, color, dotRenderSize * 2);
+        data.add(centerDot);
+
+        final int rad = (int)Math.floor(size);
+
+        BlastHelpers.forEachPosInCube(rad, rad, (xx, zz) -> {
+            if(xx == -rad || xx == rad || zz == -rad || zz == rad)
+            {
+                data.add(new PlotPoint(xx + cx, zz + cz, color, dotRenderSize * 2));
+
+                //Normalize, converts into a vector from center
+                double mag = Math.sqrt(xx * xx + zz * zz);
+                double xVector = xx / mag;
+                double zVector = zz / mag;
+
+                //Debug
+                outputDebug(String.format("x: %s y: %s | dx: %.4f dz: %.4f", xx, zz, xVector, zVector));
+
+                double x = 0;
+                double z = 0;
+
+                PlotPoint prevPoint = centerDot;
+                while(x <= size && x >= -size && z <= size && z >= -size) {
+
+                    final PlotPoint dot = new PlotPoint(x + cx, z + cz, color, dotRenderSize);
+                    prevPoint.connections.add(new PlotPoint(x + cx, z + cz, Utils.randomColor(), lineRenderSize));
+                    data.add(dot);
+
+                    outputDebug(String.format("\tx: %.4f y: %.4f", x, z));
+
+                    x += xVector * 0.5;
+                    z += zVector * 0.5;
+                }
+            }
+        });
+    }
+
+    public void calculateRayTraceEveryBlockAsCircle(final List<PlotPoint> data,
+                                                    final Color color, final int dotRenderSize, final int lineRenderSize,
+                                                    final double size, final double cx, final double cz)
+    {
+        final PlotPoint centerDot = new PlotPoint(cx, cz, color, dotRenderSize * 2);
+        data.add(centerDot);
+
+        BlastHelpers.forEachPosInRadiusUntil((int)size, (xx, zz) -> {
+            double x = xx + cx;
+            double z = zz + cz;
+            final PlotPoint dot = new PlotPoint(x, z, color, dotRenderSize);
+            centerDot.connections.add(new PlotPoint(x, z, Utils.randomColor(), lineRenderSize));
+            data.add(dot);
+        });
     }
 
     protected void outputDebug(String msg)
