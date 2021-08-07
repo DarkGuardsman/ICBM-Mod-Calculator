@@ -137,7 +137,17 @@ public class PanelLargeBlast extends JPanel implements ActionListener
 
         //Alg selection
         controlPanel.add(new Label("Alg"));
-        controlPanel.add(algSelected = new JComboBox<String>(new String[]{"Blast Large", "E TNT", "RAY CUBE", "RAY CIRCLE", "EDGE CUBE"}));
+        controlPanel.add(algSelected = new JComboBox<String>
+                (
+                        new String[]{
+                                "Blast Large",
+                                "E TNT",
+                                "RAY CUBE",
+                                "RAY CIRCLE",
+                                "EDGE CUBE",
+                                "EDGE WALLS"
+                        }
+                ));
         algSelected.setSelectedIndex(0);
 
         //Distance field
@@ -263,22 +273,27 @@ public class PanelLargeBlast extends JPanel implements ActionListener
                 //Vanilla TNT with ICBM spice
                 else if (selectedAlg == 1)
                 {
-                    calculateTntBlast(data, Color.BLACK, dotRenderSize, lineRenderSize, (float)size, centerX, centerZ);
+                    calculateTntBlast(data, Color.BLACK, dotRenderSize, lineRenderSize, (float) size, centerX, centerZ);
                 }
                 //Badly optimized redmatter that used a ray trace per cube
                 else if (selectedAlg == 2)
                 {
-                    calculateRayTraceEveryBlockAsBox(data, Color.BLACK, dotRenderSize, lineRenderSize, (float)size, centerX, centerZ);
+                    calculateRayTraceEveryBlockAsBox(data, Color.BLACK, dotRenderSize, lineRenderSize, (float) size, centerX, centerZ);
                 }
                 //Badly optimized redmatter that used a ray trace per cube
                 else if (selectedAlg == 3)
                 {
-                    calculateRayTraceEveryBlockAsCircle(data, Color.BLACK, dotRenderSize, lineRenderSize, (float)size, centerX, centerZ);
+                    calculateRayTraceEveryBlockAsCircle(data, Color.BLACK, dotRenderSize, lineRenderSize, (float) size, centerX, centerZ);
                 }
                 //Ray trace edge blocks only
                 else if (selectedAlg == 4)
                 {
-                    calculateRayTraceEdgeBlockAsBox(    data, Color.BLACK, dotRenderSize, lineRenderSize, (float)size, centerX, centerZ);
+                    calculateRayTraceEdgeBlockAsBox(data, Color.BLACK, dotRenderSize, lineRenderSize, (float) size, centerX, centerZ);
+                }
+                //Ray trace edge blocks only, used a faster alg then above
+                else if (selectedAlg == 5)
+                {
+                    calculateRayTraceBoxWalls(data, Color.BLACK, dotRenderSize, lineRenderSize, (int) Math.floor(size), centerX, centerZ);
                 }
                 else
                 {
@@ -369,7 +384,7 @@ public class PanelLargeBlast extends JPanel implements ActionListener
                     final double magnitude = Math.sqrt(xStep * xStep + /*yStep * yStep +*/ zStep * zStep);
 
                     //normalize, takes it from a box shape to a circle shape
-                    if(normalizeVectorCheckbox.getState())
+                    if (normalizeVectorCheckbox.getState())
                     {
                         xStep /= magnitude;
                         //yStep /= diagonalDistance;
@@ -502,7 +517,7 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         final PlotPoint centerDot = new PlotPoint(cx, cz, color, dotRenderSize * 2);
         data.add(centerDot);
 
-        BlastHelpers.forEachPosInCube((int)size, (int)size, (xx, zz) -> {
+        BlastHelpers.forEachPosInCube((int) size, (int) size, (xx, zz) -> {
             double x = xx + cx;
             double z = zz + cz;
             final PlotPoint dot = new PlotPoint(x, z, color, dotRenderSize);
@@ -511,17 +526,53 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         });
     }
 
-    public void calculateRayTraceEdgeBlockAsBox(final List<PlotPoint> data,
-                                                 final Color color, final int dotRenderSize, final int lineRenderSize,
-                                                 final double size, final double cx, final double cz)
+    public void calculateRayTraceBoxWalls(final List<PlotPoint> data,
+                                          final Color color, final int dotRenderSize, final int lineRenderSize,
+                                          final int size, final double cx, final double cz)
     {
         final PlotPoint centerDot = new PlotPoint(cx, cz, color, dotRenderSize * 2);
         data.add(centerDot);
 
-        final int rad = (int)Math.floor(size);
+        int[][] offsets = new int[][]{
+                new int[]{0, 1},
+                new int[]{0, -1},
+                new int[]{1, 0},
+                new int[]{-1, 0}
+        };
+
+        for (int[] offset : offsets)
+        {
+            loopWall(offset[0], offset[1], size, (xx, zz) -> {
+                double x = xx + cx;
+                double z = zz + cz;
+                final PlotPoint dot = new PlotPoint(x, z, color, dotRenderSize);
+                centerDot.connections.add(new PlotPoint(x, z, Utils.randomColor(), lineRenderSize));
+                data.add(dot);
+            });
+        }
+    }
+
+    private void loopWall(int offset_x, int offset_z, int size, CellConsumer consumer)
+    {
+        for (int step = -size; step <= size; step++)
+        {
+            final int x = size * offset_x + step * offset_z;
+            final int z = size * offset_z + step * offset_x;
+            consumer.apply(x, z);
+        }
+    }
+
+    public void calculateRayTraceEdgeBlockAsBox(final List<PlotPoint> data,
+                                                final Color color, final int dotRenderSize, final int lineRenderSize,
+                                                final double size, final double cx, final double cz)
+    {
+        final PlotPoint centerDot = new PlotPoint(cx, cz, color, dotRenderSize * 2);
+        data.add(centerDot);
+
+        final int rad = (int) Math.floor(size);
 
         BlastHelpers.forEachPosInCube(rad, rad, (xx, zz) -> {
-            if(xx == -rad || xx == rad || zz == -rad || zz == rad)
+            if (xx == -rad || xx == rad || zz == -rad || zz == rad)
             {
                 data.add(new PlotPoint(xx + cx, zz + cz, color, dotRenderSize * 2));
 
@@ -537,7 +588,8 @@ public class PanelLargeBlast extends JPanel implements ActionListener
                 double z = 0;
 
                 PlotPoint prevPoint = centerDot;
-                while(x <= size && x >= -size && z <= size && z >= -size) {
+                while (x <= size && x >= -size && z <= size && z >= -size)
+                {
 
                     final PlotPoint dot = new PlotPoint(x + cx, z + cz, color, dotRenderSize);
                     prevPoint.connections.add(new PlotPoint(x + cx, z + cz, Utils.randomColor(), lineRenderSize));
@@ -559,7 +611,7 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         final PlotPoint centerDot = new PlotPoint(cx, cz, color, dotRenderSize * 2);
         data.add(centerDot);
 
-        BlastHelpers.forEachPosInRadiusUntil((int)size, (xx, zz) -> {
+        BlastHelpers.forEachPosInRadiusUntil((int) size, (xx, zz) -> {
             double x = xx + cx;
             double z = zz + cz;
             final PlotPoint dot = new PlotPoint(x, z, color, dotRenderSize);

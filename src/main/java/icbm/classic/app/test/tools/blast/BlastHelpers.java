@@ -10,11 +10,6 @@ public final class BlastHelpers
         //Empty as this is a helper class only
     }
 
-    public static interface CellConsumer
-    {
-        void apply(int x, int z);
-    }
-
     /**
      * Loops a cube with the size given then only returns the values inside the radius
      *
