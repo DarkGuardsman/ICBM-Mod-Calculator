@@ -3,7 +3,10 @@ package icbm.classic.app.test.tools.blast;
 import icbm.classic.app.test.data.PlotPoint;
 import icbm.classic.app.test.gui.components.PlotPanel;
 import icbm.classic.app.test.gui.components.PlotRenderStages;
+import icbm.classic.app.test.gui.components.render.PlotGridRender;
 import icbm.classic.app.test.tools.Utils;
+import icbm.classic.app.test.tools.blast.calcs.BlastWallCalculations;
+import icbm.classic.app.test.tools.blast.calcs.EveryBlockCalculations;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -80,9 +83,9 @@ public class PanelLargeBlast extends JPanel implements ActionListener
     {
         plotPanel = new PlotPanel();
         plotPanel.setMinimumSize(new Dimension(600, 600));
-        plotPanel.drawLines(1, 1);
+        plotPanel.addRendersToRun(new PlotGridRender().setLineColor(Color.WHITE));
         plotPanel.addRendersToRun((plot, g2, stage, stageDone) -> {
-            if (stage == PlotRenderStages.GRID && !stageDone && plot.plotPointData.size() > 0 && renderHeatmapCheckbox.getState())
+            if (stage == PlotRenderStages.BOARD && !stageDone && plot.plotPointData.size() > 0 && renderHeatmapCheckbox.getState())
             {
                 for (int x = 0; x < plot.getPlotSizeX(); x++)
                 {
@@ -283,17 +286,17 @@ public class PanelLargeBlast extends JPanel implements ActionListener
                 //Badly optimized redmatter that used a ray trace per cube
                 else if (selectedAlg == 3)
                 {
-                    calculateRayTraceEveryBlockAsCircle(data, Color.BLACK, dotRenderSize, lineRenderSize, (float) size, centerX, centerZ);
+                    EveryBlockCalculations.calculateRayTraceEveryBlockAsCircle(data, Color.BLACK, dotRenderSize, lineRenderSize, (float) size, centerX, centerZ);
                 }
                 //Ray trace edge blocks only
                 else if (selectedAlg == 4)
                 {
-                    calculateRayTraceEdgeBlockAsBox(data, Color.BLACK, dotRenderSize, lineRenderSize, (float) size, centerX, centerZ);
+                    EveryBlockCalculations.calculateRayTraceEdgeBlockAsBox(data, Color.BLACK, dotRenderSize, lineRenderSize, (float) size, centerX, centerZ);
                 }
                 //Ray trace edge blocks only, used a faster alg then above
                 else if (selectedAlg == 5)
                 {
-                    calculateRayTraceBoxWalls(data, Color.BLACK, dotRenderSize, lineRenderSize, (int) Math.floor(size), centerX, centerZ);
+                    BlastWallCalculations.calculateRayTraceBoxWalls(data, Color.BLACK, dotRenderSize, lineRenderSize, (int) Math.floor(size), centerX, centerZ);
                 }
                 else
                 {
@@ -325,8 +328,6 @@ public class PanelLargeBlast extends JPanel implements ActionListener
 
                 //Set data into plot
                 plotPanel.setPlotPointData(relocatedData);
-
-
             }
             catch (Exception e)
             {
@@ -526,99 +527,8 @@ public class PanelLargeBlast extends JPanel implements ActionListener
         });
     }
 
-    public void calculateRayTraceBoxWalls(final List<PlotPoint> data,
-                                          final Color color, final int dotRenderSize, final int lineRenderSize,
-                                          final int size, final double cx, final double cz)
-    {
-        final PlotPoint centerDot = new PlotPoint(cx, cz, color, dotRenderSize * 2);
-        data.add(centerDot);
 
-        int[][] offsets = new int[][]{
-                new int[]{0, 1},
-                new int[]{0, -1},
-                new int[]{1, 0},
-                new int[]{-1, 0}
-        };
 
-        for (int[] offset : offsets)
-        {
-            loopWall(offset[0], offset[1], size, (xx, zz) -> {
-                double x = xx + cx;
-                double z = zz + cz;
-                final PlotPoint dot = new PlotPoint(x, z, color, dotRenderSize);
-                centerDot.connections.add(new PlotPoint(x, z, Utils.randomColor(), lineRenderSize));
-                data.add(dot);
-            });
-        }
-    }
-
-    private void loopWall(int offset_x, int offset_z, int size, CellConsumer consumer)
-    {
-        for (int step = -size; step <= size; step++)
-        {
-            final int x = size * offset_x + step * offset_z;
-            final int z = size * offset_z + step * offset_x;
-            consumer.apply(x, z);
-        }
-    }
-
-    public void calculateRayTraceEdgeBlockAsBox(final List<PlotPoint> data,
-                                                final Color color, final int dotRenderSize, final int lineRenderSize,
-                                                final double size, final double cx, final double cz)
-    {
-        final PlotPoint centerDot = new PlotPoint(cx, cz, color, dotRenderSize * 2);
-        data.add(centerDot);
-
-        final int rad = (int) Math.floor(size);
-
-        BlastHelpers.forEachPosInCube(rad, rad, (xx, zz) -> {
-            if (xx == -rad || xx == rad || zz == -rad || zz == rad)
-            {
-                data.add(new PlotPoint(xx + cx, zz + cz, color, dotRenderSize * 2));
-
-                //Normalize, converts into a vector from center
-                double mag = Math.sqrt(xx * xx + zz * zz);
-                double xVector = xx / mag;
-                double zVector = zz / mag;
-
-                //Debug
-                outputDebug(String.format("x: %s y: %s | dx: %.4f dz: %.4f", xx, zz, xVector, zVector));
-
-                double x = 0;
-                double z = 0;
-
-                PlotPoint prevPoint = centerDot;
-                while (x <= size && x >= -size && z <= size && z >= -size)
-                {
-
-                    final PlotPoint dot = new PlotPoint(x + cx, z + cz, color, dotRenderSize);
-                    prevPoint.connections.add(new PlotPoint(x + cx, z + cz, Utils.randomColor(), lineRenderSize));
-                    data.add(dot);
-
-                    outputDebug(String.format("\tx: %.4f y: %.4f", x, z));
-
-                    x += xVector * 0.5;
-                    z += zVector * 0.5;
-                }
-            }
-        });
-    }
-
-    public void calculateRayTraceEveryBlockAsCircle(final List<PlotPoint> data,
-                                                    final Color color, final int dotRenderSize, final int lineRenderSize,
-                                                    final double size, final double cx, final double cz)
-    {
-        final PlotPoint centerDot = new PlotPoint(cx, cz, color, dotRenderSize * 2);
-        data.add(centerDot);
-
-        BlastHelpers.forEachPosInRadiusUntil((int) size, (xx, zz) -> {
-            double x = xx + cx;
-            double z = zz + cz;
-            final PlotPoint dot = new PlotPoint(x, z, color, dotRenderSize);
-            centerDot.connections.add(new PlotPoint(x, z, Utils.randomColor(), lineRenderSize));
-            data.add(dot);
-        });
-    }
 
     protected void outputDebug(String msg)
     {

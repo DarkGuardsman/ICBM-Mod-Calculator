@@ -50,7 +50,6 @@ public class PanelEntitySpawning extends JPanel implements ActionListener
     {
         plotPanel = new PlotPanel();
         plotPanel.setMinimumSize(new Dimension(600, 600));
-        plotPanel.drawLines(1);
         plotPanel.setPlotSize(16, 255);
         return plotPanel;
     }

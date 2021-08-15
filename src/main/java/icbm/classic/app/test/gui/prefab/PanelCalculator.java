@@ -1,37 +1,34 @@
-package icbm.classic.app.test.tools.redmatter;
+package icbm.classic.app.test.gui.prefab;
 
 import icbm.classic.app.test.data.PlotPoint;
 import icbm.classic.app.test.gui.components.PlotPanel;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.awt.Label;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @see <a href="https://github.com/BuiltBrokenModding/VoltzEngine/blob/development/license.md">License</a> for what you can and can't do with the code.
- * Created by Dark(DarkGuardsman, Robert) on 3/1/2018.
+ * Prefab for basic calculation based plot panel
  */
-public class PanelRedmatterRender extends JPanel implements ActionListener
+public abstract class PanelCalculator extends JPanel implements ActionListener
 {
     public static final String COMMAND_CALCULATE = "calculate";
     public static final String COMMAND_CLEAR = "clear";
     public static final String COMMAND_REFRESH = "refresh";
 
-    PlotPanel plotPanel;
+    protected PlotPanel plotPanel;
 
-    JTextField ticksField;
-    JTextField scaleField;
+    protected JLabel runtimeDisplay;
 
-    Checkbox ticksCheckbox;
-    Checkbox beamsCheckbox;
-    Checkbox timeScaleCheckbox;
-    Checkbox sizeScaleCheckbox;
-
-
-    public PanelRedmatterRender()
+    public PanelCalculator()
     {
         setLayout(new BorderLayout());
 
@@ -53,9 +50,13 @@ public class PanelRedmatterRender extends JPanel implements ActionListener
     protected JPanel buildMainDisplay()
     {
         plotPanel = new PlotPanel();
-        plotPanel.setMinimumSize(new Dimension(600, 600));
-        //plotPanel.drawLines(5, 50); TODO fix
+        initPlotPanel(plotPanel);
         return plotPanel;
+    }
+
+    protected void initPlotPanel(final PlotPanel plotPanel)
+    {
+        plotPanel.setMinimumSize(new Dimension(600, 600));
     }
 
     protected JPanel buildWestSection()
@@ -70,14 +71,7 @@ public class PanelRedmatterRender extends JPanel implements ActionListener
         controlPanel.add(new JLabel("Variables"));
         controlPanel.add(new JPanel());
 
-        //Distance field
-        controlPanel.add(new Label("Ticks"));
-        controlPanel.add(ticksField = new JTextField(6));
-        ticksField.setText("400");
-
-        controlPanel.add(new Label("Scale"));
-        controlPanel.add(scaleField = new JTextField(6));
-        scaleField.setText("1.0");
+        addVarFields(controlPanel);
 
 
         //Spacer
@@ -102,19 +96,7 @@ public class PanelRedmatterRender extends JPanel implements ActionListener
         controlPanel.add(new JLabel("Display Options"));
         controlPanel.add(new JPanel());
 
-        controlPanel.add(ticksCheckbox = new Checkbox("Ticks"));
-        ticksCheckbox.setState(true);
-
-        controlPanel.add(beamsCheckbox = new Checkbox("Beams"));
-        beamsCheckbox.setState(true);
-
-        controlPanel.add(sizeScaleCheckbox = new Checkbox("Size Scale"));
-        sizeScaleCheckbox.setState(true);
-
-        controlPanel.add(timeScaleCheckbox = new Checkbox("Time Scale"));
-        timeScaleCheckbox.setState(true);
-
-        //Calculate button
+        addDisplayFields(controlPanel);
 
         JButton clearButton = new JButton("Clear");
         clearButton.setActionCommand(COMMAND_CLEAR);
@@ -143,8 +125,8 @@ public class PanelRedmatterRender extends JPanel implements ActionListener
         controlPanel.add(new Label("Field"));
         controlPanel.add(new Label("Value"));
 
-        //controlPanel.add(new Label("Max Y"));
-        //controlPanel.add(maxYLabel = new JLabel("-- m"));
+        controlPanel.add(new Label("Runtime"));
+        controlPanel.add(runtimeDisplay = new JLabel("-- m"));
 
         //Add and return
         westPanel.add(controlPanel);
@@ -156,21 +138,20 @@ public class PanelRedmatterRender extends JPanel implements ActionListener
     {
         if (event.getActionCommand().equalsIgnoreCase(COMMAND_CALCULATE))
         {
+            final long startTime = System.nanoTime();
             try
             {
-                int count = (int) Math.floor(Double.parseDouble(ticksField.getText().trim()));
-                float scale = Float.parseFloat(scaleField.getText().trim());
-
                 //Draw data
-                List<PlotPoint> data = new ArrayList(count);
-                calculateData(data, count, scale);
-                plotPanel.setPlotPointData(data);
+                plotPanel.setPlotPointData(runCalculation());
                 plotPanel.repaint();
             }
             catch (Exception e)
             {
                 e.printStackTrace();
             }
+
+            final long runTime = System.nanoTime() - startTime;
+            runtimeDisplay.setText(runTime + "ns");
         }
         else if (event.getActionCommand().equalsIgnoreCase(COMMAND_CLEAR))
         {
@@ -184,56 +165,47 @@ public class PanelRedmatterRender extends JPanel implements ActionListener
         }
     }
 
-    /**
-     * Calculates the data points for the
-     */
-    public void calculateData(List<PlotPoint> data, int ticksToRun, float scale)
+    protected void addVarFields(JPanel controlPanel)
     {
-        //Get tick value
-        for (int ticksAlive = 0; ticksAlive < ticksToRun; ticksAlive++)
+
+    }
+
+    protected void addDisplayFields(JPanel controlPanel)
+    {
+
+    }
+
+    /**
+     * Helper to quickly add a label and text field to the variable control panel
+     *
+     * @param controlPanel to add field and label to
+     * @param label        name to use
+     * @param defaultText  to use
+     * @return field create for reference
+     */
+    protected JTextField addTextField(JPanel controlPanel, String label, String defaultText)
+    {
+        final JTextField field = new JTextField(6);
+        field.setText(defaultText);
+
+        controlPanel.add(new Label(label));
+        controlPanel.add(field);
+
+        return field;
+    }
+
+    protected double parseDouble(JTextField field)
+    {
+        try
+        {
+            return Double.parseDouble(field.getText());
+        }
+        catch (NumberFormatException ignored)
         {
 
-            float ticks = ticksAlive;
-            while (ticks > 200)
-            {
-                ticks -= 100;
-            }
-
-            float timeScale = (5 + ticks) / 200.0F;
-            float sizeScale = 0.0F;
-
-            if (timeScale > 0.8F)
-            {
-                sizeScale = (timeScale - 0.8F) / 0.2F;
-            }
-
-            int beamCount = (int) ((timeScale + timeScale * timeScale) / 2.0F * 60.0F);
-
-
-            //Add data to display
-            if (ticksCheckbox.getState())
-            {
-                data.add(new PlotPoint(ticksAlive, ticks, Color.RED));
-            }
-            if (timeScaleCheckbox.getState())
-            {
-                data.add(new PlotPoint(ticksAlive, timeScale, Color.YELLOW));
-            }
-            if (sizeScaleCheckbox.getState())
-            {
-                data.add(new PlotPoint(ticksAlive, sizeScale, Color.BLUE));
-            }
-            if (beamsCheckbox.getState())
-            {
-                data.add(new PlotPoint(ticksAlive, beamCount, Color.GREEN));
-            }
-
-            //Debug data
-            System.out.println("T = " + ticksAlive);
-            System.out.println("\tTicks = " + ticks);
-            System.out.println("\tBeams = " + beamCount);
-            System.out.println("\tTime Scale = " + timeScale);
-            System.out.println("\tSize Scale = " + sizeScale);
         }
+        return 0;
     }
+
+    protected abstract List<PlotPoint> runCalculation();
 }

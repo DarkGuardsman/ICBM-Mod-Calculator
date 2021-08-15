@@ -129,7 +129,7 @@ public class PanelWave extends JPanel implements ActionListener
                 int segments = (int) Math.floor(Double.parseDouble(segmentsField.getText().trim()));
                 int runs = (int) Math.floor(Double.parseDouble(runsField.getText().trim()));
 
-                plotPanel.drawLines(segments, 1);
+                //plotPanel.drawLines(segments, 1); TODO fix
 
                 //Get data
                 calculateData(segments, runs);

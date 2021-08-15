@@ -2,180 +2,111 @@ package icbm.classic.app.test.tools.redmatter;
 
 import icbm.classic.app.test.data.PlotPoint;
 import icbm.classic.app.test.gui.components.PlotPanel;
+import icbm.classic.app.test.gui.components.PlotRenderStages;
+import icbm.classic.app.test.gui.components.StageDrivenRender;
+import icbm.classic.app.test.gui.components.render.PlotGridRender;
+import icbm.classic.app.test.gui.prefab.PanelCalculator;
 
-import javax.swing.JButton;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.GridLayout;
-import java.awt.Label;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @see <a href="https://github.com/BuiltBrokenModding/VoltzEngine/blob/development/license.md">License</a> for what you can and can't do with the code.
- * Created by Dark(DarkGuardsman, Robert) on 3/1/2018.
+ * Panel used to toy with scale settings for redmatter logic.
+ * <p>
+ * In theory the defaults and logic should match current in dev implementation
  */
-public class PanelRedmatterBlast extends JPanel implements ActionListener
+public class PanelRedmatterBlast extends PanelCalculator
 {
-    public static final String COMMAND_CALCULATE = "calculate";
-    public static final String COMMAND_CLEAR = "clear";
-    public static final String COMMAND_REFRESH = "refresh";
+    /** Size of the redmatter and main driving variable */
+    JTextField sizeField;
+    /** Multiplier of size to get render size */
+    JTextField renderScaleField;
+    /** Multiplier of size to get kill range for entities */
+    JTextField killRangeScaleField;
+    /** Multiplier of size to get block harvest range, usually 1:1 */
+    JTextField blockRangeScaleField;
+    /** Multiplier of size to get entity gravity range */
+    JTextField entityRangeScaleField;
 
-    PlotPanel plotPanel;
-
-    JTextField radiusField;
-
-    JLabel runtimeDisplay;
-
-    public PanelRedmatterBlast()
+    @Override
+    protected void initPlotPanel(final PlotPanel plotPanel)
     {
-        setLayout(new BorderLayout());
-
-        //Output data
-        add(buildEastSection(), BorderLayout.EAST);
-
-        //Add plot panel to left side
-        add(buildMainDisplay(), BorderLayout.CENTER);
-
-        //Setup control panel (Contains input fields and action buttons)
-        add(buildWestSection(), BorderLayout.WEST);
-
-        //Debug panel TODO add later
-        JPanel debugPanel = new JPanel();
-        debugPanel.setMinimumSize(new Dimension(800, 200));
-        add(debugPanel, BorderLayout.SOUTH);
-    }
-
-    protected JPanel buildMainDisplay()
-    {
-        plotPanel = new PlotPanel();
-        plotPanel.setMinimumSize(new Dimension(600, 600));
-        plotPanel.drawLines(5, 50);
-        return plotPanel;
-    }
-
-    protected JPanel buildWestSection()
-    {
-        JPanel westPanel = new JPanel();
-
-        //Controls
-        JPanel controlPanel = new JPanel();
-        controlPanel.setLayout(new GridLayout(0, 2));
-
-        //Spacer
-        controlPanel.add(new JLabel("Variables"));
-        controlPanel.add(new JPanel());
-
-        controlPanel.add(new Label("Radius"));
-        controlPanel.add(radiusField = new JTextField(6));
-        radiusField.setText("70");
-
-
-        //Spacer
-        controlPanel.add(new JPanel());
-        controlPanel.add(new JPanel());
-
-
-        //Calculate button
-        controlPanel.add(new JPanel());
-        JButton calculateButton = new JButton("Calculate");
-        calculateButton.setActionCommand(COMMAND_CALCULATE);
-        calculateButton.addActionListener(this);
-        controlPanel.add(calculateButton);
-
-        //Spacer
-        controlPanel.add(new JPanel());
-        controlPanel.add(new JPanel());
-
-        //---------------------------------------------------------------
-
-
-        controlPanel.add(new JLabel("Display Options"));
-        controlPanel.add(new JPanel());
-
-        //Calculate button
-
-        JButton clearButton = new JButton("Clear");
-        clearButton.setActionCommand(COMMAND_CLEAR);
-        clearButton.addActionListener(this);
-        controlPanel.add(clearButton);
-
-        JButton refreshButton = new JButton("Refresh");
-        refreshButton.setActionCommand(COMMAND_REFRESH);
-        refreshButton.addActionListener(this);
-        controlPanel.add(refreshButton);
-
-        //Add and return
-        westPanel.add(controlPanel);
-        return westPanel;
-    }
-
-    protected JPanel buildEastSection()
-    {
-        JPanel westPanel = new JPanel();
-
-        //Controls
-        JPanel controlPanel = new JPanel();
-        controlPanel.setLayout(new GridLayout(0, 2));
-
-        //Header
-        controlPanel.add(new Label("Field"));
-        controlPanel.add(new Label("Value"));
-
-        controlPanel.add(new Label("Runtime"));
-        controlPanel.add(runtimeDisplay = new JLabel("-- m"));
-
-        //Add and return
-        westPanel.add(controlPanel);
-        return westPanel;
+        super.initPlotPanel(plotPanel);
+        plotPanel.setBackground(Color.BLACK);
+        plotPanel.addRendersToRun(new PlotGridRender().setLineColor(Color.WHITE));
+        plotPanel.addRendersToRun(new StageDrivenRender(PlotRenderStages.END, false, this::renderRedmatterDisk));
+        plotPanel.addRendersToRun(new StageDrivenRender(PlotRenderStages.END, false, this::renderRedmatterOrb));
+        plotPanel.addRendersToRun(new StageDrivenRender(PlotRenderStages.END, false, this::renderRedmatterBlockRange));
+        plotPanel.addRendersToRun(new StageDrivenRender(PlotRenderStages.END, false, this::renderRedmatterEntityRange));
     }
 
     @Override
-    public void actionPerformed(ActionEvent event)
+    protected void addVarFields(JPanel controlPanel)
     {
-        if (event.getActionCommand().equalsIgnoreCase(COMMAND_CALCULATE))
-        {
-            final long startTime = System.nanoTime();
-            try
-            {
-                final float radius = Float.parseFloat(radiusField.getText().trim());
-
-                //Draw data
-                List<PlotPoint> data = new ArrayList((int) Math.floor(radius * radius * radius));
-                calculateData(data, radius);
-                plotPanel.setPlotPointData(data);
-                plotPanel.repaint();
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-
-            final long runTime = System.nanoTime() - startTime;
-            runtimeDisplay.setText(runTime + "ns");
-        }
-        else if (event.getActionCommand().equalsIgnoreCase(COMMAND_CLEAR))
-        {
-            //Clear data
-            plotPanel.clearDisplay();
-            plotPanel.repaint();
-        }
-        else if (event.getActionCommand().equalsIgnoreCase(COMMAND_REFRESH))
-        {
-            plotPanel.repaint();
-        }
+        sizeField = addTextField(controlPanel, "Size", "5");
+        renderScaleField = addTextField(controlPanel, "RenderScale", "0.1");
+        killRangeScaleField = addTextField(controlPanel, "KillScale", "0.08");
+        blockRangeScaleField = addTextField(controlPanel, "BlockScale", "1");
+        entityRangeScaleField = addTextField(controlPanel, "GravityScale", "2");
     }
 
-    /**
-     * Calculates the data points for the
-     */
-    public void calculateData(List<PlotPoint> data, float radius)
+    private int centerX()
     {
-        //data.add(new PlotPoint(ticksAlive, ticks, Color.RED));
+        double width = parseDouble(sizeField) * 2;
+        double fullSize = width + 2;
+        return (int) Math.ceil(fullSize / 2);
+    }
+
+    private int centerZ()
+    {
+        double width = parseDouble(sizeField) * 2;
+        double fullSize = width + 2;
+        return (int) Math.ceil(fullSize / 2);
+    }
+
+    @Override
+    protected List<PlotPoint> runCalculation()
+    {
+        final List<PlotPoint> data = new ArrayList();
+
+        double size = parseDouble(sizeField);
+
+        plotPanel.setPlotSize((int) Math.ceil(size * 2) + 2, (int) Math.ceil(size * 2) + 2);
+
+        return data;
+    }
+
+
+    private void renderRedmatterOrb(final PlotPanel plot, Graphics2D g2)
+    {
+        final double renderScale = parseDouble(renderScaleField) * parseDouble(sizeField);
+        g2.setStroke(new BasicStroke(2));
+        plot.drawCircle(g2, Color.BLUE, centerX(), centerZ(), renderScale, true, true);
+    }
+
+    private void renderRedmatterDisk(final PlotPanel plot, Graphics2D g2)
+    {
+        final double renderScale = (parseDouble(renderScaleField) * 2) * parseDouble(sizeField);
+        g2.setStroke(new BasicStroke(2));
+        plot.drawCircle(g2, Color.CYAN, centerX(), centerZ(), renderScale, true, true);
+    }
+
+    private void renderRedmatterBlockRange(final PlotPanel plot, Graphics2D g2)
+    {
+        final double renderScale = parseDouble(blockRangeScaleField) * parseDouble(sizeField);
+        g2.setStroke(new BasicStroke(2));
+        plot.drawCircle(g2, Color.RED, centerX(), centerZ(), renderScale, false, true);
+    }
+
+    private void renderRedmatterEntityRange(final PlotPanel plot, Graphics2D g2)
+    {
+        final double renderScale = parseDouble(entityRangeScaleField) * parseDouble(sizeField);
+        g2.setStroke(new BasicStroke(2));
+        plot.drawCircle(g2, Color.yellow, centerX(), centerZ(), renderScale, false, true);
     }
 }

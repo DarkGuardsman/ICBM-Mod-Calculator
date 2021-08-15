@@ -136,7 +136,7 @@ public class PanelSinGenerator extends JPanel implements ActionListener
                 double bias = Double.parseDouble(biasField.getText().trim());
 
                 //Reset panel state
-                plotPanel.drawLines(hz, amp / 2);
+                //plotPanel.drawLines(hz, amp / 2); TODO fix
                 plotPanel.clearDisplay();
 
                 //Get data

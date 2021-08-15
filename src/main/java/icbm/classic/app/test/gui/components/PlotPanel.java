@@ -25,15 +25,13 @@ public class PlotPanel extends JPanel
 {
     /** Data to display in the panel */
     public List<PlotPoint> plotPointData = new ArrayList(); //TODO add getter and make private
-    protected List<PlotRenderCallback> rendersToRun = new ArrayList();
+    protected List<PlotRenderCallback> rendersToRun = new ArrayList(); //TODO convert into a sorted render layer
+
     /** Spacing from each side */
-    int PAD = 20;
+    private int plotPadding = 20;
 
-    int plotSizeX = -1;
-    int plotSizeY = -1;
-
-    double plotLineSpacingX = -1;
-    double plotLineSpacingY = -1;
+    private int plotSizeX = -1;
+    private int plotSizeY = -1;
 
     public PlotPanel()
     {
@@ -50,22 +48,18 @@ public class PlotPanel extends JPanel
         rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.START, true));
 
         rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.BOARD, false));
-        drawBorder(g2);
+        drawBorder(g2); //TODO Convert to render class
         rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.BOARD, true));
 
-        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.GRID, false));
-        drawGrid(g2);
-        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.GRID, true));
-
         rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.RULER, false));
-        drawRuler(g2);
+        drawRuler(g2); //TODO Convert to render class
         rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.RULER, true));
 
         rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.DATA, false));
-        drawData(g2);
+        drawData(g2); //TODO Convert to render class
         rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.DATA, true));
 
-        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.START, false));
+        rendersToRun.forEach(func -> func.apply(this, g2, PlotRenderStages.END, false));
     }
 
     /**
@@ -78,59 +72,7 @@ public class PlotPanel extends JPanel
         g2.drawRect(1, 1, getWidth() - 2, getHeight() - 2); //TODO why -2?
     }
 
-    protected void drawGrid(Graphics2D g2)
-    {
-        if (plotLineSpacingX > 0)
-        {
-            drawGridX(g2);
-        }
-        if (plotLineSpacingY > 0)
-        {
-            drawGridY(g2);
-        }
-    }
 
-    protected void drawGridX(Graphics2D g2)
-    {
-        double start = 0;
-        double end = getDrawMaxX();
-
-        double current = start;
-        double xScale = getScaleX();
-
-        while (current < end)
-        {
-            //Increase
-            current += plotLineSpacingX;
-
-            //Get pixel point of x
-            int x = PAD + (int) Math.ceil(current * xScale);
-
-            //Draw line
-            g2.draw(new Line2D.Double(x, PAD, x, getHeight() - PAD));
-        }
-    }
-
-    protected void drawGridY(Graphics2D g2)
-    {
-        double start = 0;
-        double end = getDrawMaxY();
-
-        double current = start;
-        double yScale = getScaleY();
-
-        while (current < end)
-        {
-            //Increase
-            current += plotLineSpacingY;
-
-            //Get pixel point of x
-            int y = PAD + (int) Math.ceil(current * yScale);
-
-            //Draw line
-            g2.draw(new Line2D.Double(PAD, y, getWidth() - PAD, y));
-        }
-    }
 
     /**
      * Draws the ruler
@@ -140,10 +82,10 @@ public class PlotPanel extends JPanel
     protected void drawRuler(Graphics2D g2)
     {
         //Left line
-        g2.draw(new Line2D.Double(PAD, PAD, PAD, getHeight() - PAD));
+        g2.draw(new Line2D.Double(plotPadding, plotPadding, plotPadding, getHeight() - plotPadding));
 
         //Bottom line
-        g2.draw(new Line2D.Double(PAD, getHeight() - PAD, getWidth() - PAD, getHeight() - PAD));
+        g2.draw(new Line2D.Double(plotPadding, getHeight() - plotPadding, getWidth() - plotPadding, getHeight() - plotPadding));
     }
 
     /**
@@ -158,12 +100,13 @@ public class PlotPanel extends JPanel
             //Render data points
             for (PlotPoint pos : plotPointData)
             {
-                if(pos.shouldRender == null || pos.shouldRender.get())
+                if (pos.shouldRender == null || pos.shouldRender.get())
                 {
                     drawCircle(g2, pos.color, pos.x, pos.y, pos.size, true);
                 }
-                for(PlotPoint connection : pos.connections) {
-                    if(connection.shouldRender == null || connection.shouldRender.get())
+                for (PlotPoint connection : pos.connections)
+                {
+                    if (connection.shouldRender == null || connection.shouldRender.get())
                     {
                         drawLine(g2, pos, connection);
                     }
@@ -172,28 +115,61 @@ public class PlotPanel extends JPanel
         }
     }
 
-    public void drawLine(Graphics2D g2, PlotPoint pointData, PlotPoint lineData) {
+    public void drawLine(Graphics2D g2, PlotPoint pointData, PlotPoint lineData)
+    {
 
         //Calculate scale to fit display
         double scaleX = getScaleX();
         double scaleY = getScaleY();
 
         //Get pixel position
-        double startX = PAD + scaleX * pointData.x;
-        double startY = getHeight() - PAD - scaleY * pointData.y;
-        double endX = PAD + scaleX * lineData.x;
-        double endY = getHeight() - PAD - scaleY * lineData.y;
+        double startX = plotPadding + scaleX * pointData.x;
+        double startY = getHeight() - plotPadding - scaleY * pointData.y;
+        double endX = plotPadding + scaleX * lineData.x;
+        double endY = getHeight() - plotPadding - scaleY * lineData.y;
 
         g2.setPaint(lineData.color != null ? lineData.color : Color.red);
         g2.setStroke(new BasicStroke(lineData.size));
         g2.draw(new Line2D.Double(startX, startY, endX, endY));
     }
 
+    /**
+     * Draws a circle on the plot
+     * @param g2
+     * @param color
+     * @param point_x
+     * @param point_y
+     * @param size
+     * @param fill
+     */
     public void drawCircle(Graphics2D g2, Color color, double point_x, double point_y, double size, boolean fill)
     {
         drawEllipse(g2, color, point_x, point_y, size, size, fill);
     }
 
+    public void drawCircle(Graphics2D g2, Color color, double point_x, double point_y, double size, boolean fill, boolean scale)
+    {
+        if (scale)
+        {
+            drawEllipse(g2, color, point_x, point_y, size * getScaleX(), size * getScaleX(), fill);
+        }
+        else
+        {
+            drawEllipse(g2, color, point_x, point_y, size, size, fill);
+        }
+    }
+
+    /**
+     * Draws an ellipse on the plot
+     *
+     * @param g2 graphics engine for drawing
+     * @param color to draw with
+     * @param point_x on the plot to render
+     * @param point_y on the plot to render
+     * @param size_x size relative to plot to render
+     * @param size_y size relative to plot to render
+     * @param fill false will draw an outline only
+     */
     public void drawEllipse(Graphics2D g2, Color color, double point_x, double point_y, double size_x, double size_y, boolean fill)
     {
         //Calculate scale to fit display
@@ -201,8 +177,8 @@ public class PlotPanel extends JPanel
         double scaleY = getScaleY();
 
         //Get pixel position
-        double x = PAD + scaleX * point_x;
-        double y = getHeight() - PAD - scaleY * point_y;
+        double x = plotPadding + scaleX * point_x;
+        double y = getHeight() - plotPadding - scaleY * point_y;
 
         if (x >= 0 && x <= getWidth() && y <= getHeight())
         {
@@ -224,14 +200,15 @@ public class PlotPanel extends JPanel
         }
     }
 
-    public void drawBox(Graphics2D g2, Color color, double point_x, double point_y, double size_x, double size_y, boolean fill) {
+    public void drawBox(Graphics2D g2, Color color, double point_x, double point_y, double size_x, double size_y, boolean fill)
+    {
         //Calculate scale to fit display
         double scaleX = getScaleX();
         double scaleY = getScaleY();
 
         //Get pixel position
-        double x = PAD + scaleX * point_x;
-        double y = getHeight() - PAD - scaleY * point_y;
+        double x = plotPadding + scaleX * point_x;
+        double y = getHeight() - plotPadding - scaleY * point_y;
 
         if (x >= 0 && x <= getWidth() && y <= getHeight())
         {
@@ -263,7 +240,7 @@ public class PlotPanel extends JPanel
      */
     public double getScaleX()
     {
-        return (double) (getWidth() - 2 * PAD) / getDrawMaxX();
+        return (double) (getWidth() - 2 * plotPadding) / getDrawMaxX();
     }
 
     /**
@@ -275,7 +252,7 @@ public class PlotPanel extends JPanel
      */
     public double getScaleY()
     {
-        return (double) (getHeight() - 2 * PAD) / getDrawMaxY();
+        return (double) (getHeight() - 2 * plotPadding) / getDrawMaxY();
     }
 
     public double getDrawMaxX()
@@ -381,20 +358,12 @@ public class PlotPanel extends JPanel
         }
     }
 
-    public void drawLines(double i)
-    {
-        plotLineSpacingX = i;
-        plotLineSpacingY = i;
-    }
-
-    public void drawLines(double x, double y)
-    {
-        plotLineSpacingX = x;
-        plotLineSpacingY = y;
-    }
-
     public void addRendersToRun(PlotRenderCallback renderFunction)
     {
         rendersToRun.add(renderFunction);
+    }
+
+    public int getPlotPadding() {
+        return plotPadding;
     }
 }
