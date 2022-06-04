@@ -45,4 +45,9 @@ public class PlotPoint
     {
         return y;
     }
+
+    public PlotPoint connect(PlotPoint plotPoint) {
+        connections.add(plotPoint);
+        return this;
+    }
 }
