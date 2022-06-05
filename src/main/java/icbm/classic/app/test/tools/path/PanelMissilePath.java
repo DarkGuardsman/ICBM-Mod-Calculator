@@ -29,6 +29,8 @@ public class PanelMissilePath extends JPanel implements ActionListener
     JTextField minHeightField;
     JTextField maxHeightField;
 
+    JTextField metersPerTickField;
+
     JTextField heightInitField;
     JTextField heightScaleField;
 
@@ -115,6 +117,11 @@ public class PanelMissilePath extends JPanel implements ActionListener
         //Spacer
         controlPanel.add(new JLabel("Path Constants"));
         controlPanel.add(new JPanel());
+
+        //Min Height field
+        controlPanel.add(new Label("Ticks per meter"));
+        controlPanel.add(metersPerTickField = new JTextField(6));
+        metersPerTickField.setText(2 + "");
 
         //Min Height field
         controlPanel.add(new Label("Min Height"));
@@ -281,7 +288,7 @@ public class PanelMissilePath extends JPanel implements ActionListener
     //TODO break method down into sub methods and store all data values for display
     {
         //Constants derived from original equations
-        final int ticksPerMeterFlat = 1;
+        final double ticksPerMeterFlat = Double.parseDouble(metersPerTickField.getText().trim());
         final double minHeight = Double.parseDouble(minHeightField.getText().trim());
         final double maxHeight = Double.parseDouble(maxHeightField.getText().trim());
 
