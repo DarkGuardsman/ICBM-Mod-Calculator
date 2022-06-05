@@ -281,7 +281,7 @@ public class PanelMissilePath extends JPanel implements ActionListener
     //TODO break method down into sub methods and store all data values for display
     {
         //Constants derived from original equations
-        final int ticksPerMeterFlat = 2;
+        final int ticksPerMeterFlat = 1;
         final double minHeight = Double.parseDouble(minHeightField.getText().trim());
         final double maxHeight = Double.parseDouble(maxHeightField.getText().trim());
 
@@ -299,8 +299,8 @@ public class PanelMissilePath extends JPanel implements ActionListener
         outputDebug("\tEnd: " + endX);
 
         //Calculate vector data
-        double deltaX = endX - startX;
         double deltaY = endY - startY;
+        double deltaX = (endX - startX);
         double flat_distance = Math.abs(deltaX);
 
         double max_height = Math.min(maxHeight, Math.max(minHeight, height_init + (flat_distance * height_scale)));
@@ -348,21 +348,23 @@ public class PanelMissilePath extends JPanel implements ActionListener
 
         data.add(new PlotPoint(startX, startY, color.darker().darker(), 10));
         data.add(new PlotPoint(endX, endY, color, 10));
+        data.add(new PlotPoint(x, y, color));
 
         //Loop until position is at ground
         for (int tick = 0; tick < flight_time * 2 && y >= 0; tick++)
         {
+            //Move position by motion
+            x += mx;
+            y += my;
+
             //Add position to data
-            data.add(new PlotPoint(x, y, color));
+            final PlotPoint lastPoint = data.get(data.size() - 1);
+            data.add(new PlotPoint(x, y, color).connect(new PlotPoint(lastPoint.x, lastPoint.y, color.brighter())));
             outputDebug(String.format("\t\tT[%d]: %10.3fx %10.3fy %10.3fmx %10.3fmy", tick, x, y, mx, my));
             if (tick % 5 == 0)
             {
                 outputDebug("");
             }
-
-            //Move position by motion
-            x += mx;
-            y += my;
 
             //Decrease upward motion
             my -= drag;
