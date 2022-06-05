@@ -20,7 +20,11 @@ public class PanelMissilePath extends JPanel implements ActionListener
     public static final String COMMAND_CLEAR = "clear";
 
     PlotPanel plotPanel;
-    JTextField distanceField;
+    JTextField startXField;
+    JTextField endXField;
+
+    JTextField startYField;
+    JTextField endYField;
 
     JTextField minHeightField;
     JTextField maxHeightField;
@@ -78,10 +82,22 @@ public class PanelMissilePath extends JPanel implements ActionListener
         controlPanel.add(new JLabel("Path Variables"));
         controlPanel.add(new JPanel());
 
-        //Distance field
-        controlPanel.add(new Label("Distance"));
-        controlPanel.add(distanceField = new JTextField(6));
-        distanceField.setText(200 + "");
+        //Points
+        controlPanel.add(new Label("Start X"));
+        controlPanel.add(startXField = new JTextField(6));
+        startXField.setText(10 + "");
+
+        controlPanel.add(new Label("End X"));
+        controlPanel.add(endXField = new JTextField(6));
+        endXField.setText(200 + "");
+
+        controlPanel.add(new Label("Start Y"));
+        controlPanel.add(startYField = new JTextField(6));
+        startYField.setText(6 + "");
+
+        controlPanel.add(new Label("End Y"));
+        controlPanel.add(endYField = new JTextField(6));
+        endYField.setText(10 + "");
 
         //Calculate button
         controlPanel.add(new JPanel());
@@ -226,12 +242,15 @@ public class PanelMissilePath extends JPanel implements ActionListener
                 plotPanel.setPlotSize((int) Double.parseDouble(plotSizeXField.getText().trim()), (int) Double.parseDouble(plotSizeYField.getText().trim()));
 
                 //Get data
-                double distance = Double.parseDouble(distanceField.getText().trim());
+                double startX = Double.parseDouble(startXField.getText().trim());
+                double endX = Double.parseDouble(endXField.getText().trim());
+                double startY = Double.parseDouble(startYField.getText().trim());
+                double endY = Double.parseDouble(endYField.getText().trim());
                 double heightInit = Double.parseDouble(heightInitField.getText().trim());
                 double heightScale = Double.parseDouble(heightScaleField.getText().trim());
 
                 //Draw data
-                calculateData(0, distance, heightScale, heightInit, randomColor(), true);
+                calculateData(startX, endX, startY, endY, heightScale, heightInit, randomColor(), true);
             }
             catch (Exception e)
             {
@@ -255,13 +274,10 @@ public class PanelMissilePath extends JPanel implements ActionListener
 
     /**
      * Calculates the data points for the path from 0 to distance
-     * <p>
-     * Pulls distance from {@link #distanceField} and outputs data into
-     * console. In addition this the function sets data into the display
      *
      * @return list of 2D data points (x, y)
      */
-    public void calculateData(double start, double end, double height_scale, double height_init, Color color, boolean addToExistingData)
+    public void calculateData(double startX, double endX, double startY, double endY, double height_scale, double height_init, Color color, boolean addToExistingData)
     //TODO break method down into sub methods and store all data values for display
     {
         //Constants derived from original equations
@@ -279,12 +295,13 @@ public class PanelMissilePath extends JPanel implements ActionListener
         List<PlotPoint> data = new ArrayList();
 
         //Debug
-        outputDebug("\tStart: " + start);
-        outputDebug("\tEnd: " + end);
+        outputDebug("\tStart: " + startX);
+        outputDebug("\tEnd: " + endX);
 
         //Calculate vector data
-        double deltaX = end - start;
-        double flat_distance = Math.abs(start - end);
+        double deltaX = endX - startX;
+        double deltaY = endY - startY;
+        double flat_distance = Math.abs(deltaX);
 
         double max_height = Math.min(maxHeight, Math.max(minHeight, height_init + (flat_distance * height_scale)));
         double flight_time = ticksPerMeterFlat * flat_distance;
@@ -326,11 +343,11 @@ public class PanelMissilePath extends JPanel implements ActionListener
 
         outputDebug("\tData Points:");
         //Position
-        double x = start;
-        double y = 0;
+        double x = startX;
+        double y = startY;
 
-        data.add(new PlotPoint(start, -1, color.darker().darker(), 10));
-        data.add(new PlotPoint(end, -1, color, 10));
+        data.add(new PlotPoint(startX, startY, color.darker().darker(), 10));
+        data.add(new PlotPoint(endX, endY, color, 10));
 
         //Loop until position is at ground
         for (int tick = 0; tick < flight_time * 2 && y >= 0; tick++)
